@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+name: Stack request
+description: Ask for support for a framework, language, or platform
+labels: ["stack"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Try `/fetch-stack <name>` first.** The bundled stack-orchestrator generates a stack
+        definition on demand, so you may not need to wait for anyone. Open this issue if the
+        generated stack is wrong or incomplete, or if you think it belongs in the supported set.
+
+        v0.1.0 ships 10 supported stacks deliberately: each one is a maintenance commitment
+        across that ecosystem's churn. Expect a conversation about who keeps it current.
+
+  - type: input
+    id: stack
+    attributes:
+      label: Stack
+      placeholder: "sveltekit / spring-boot / flutter / go"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tried-fetch
+    attributes:
+      label: Did you try /fetch-stack
+      options:
+        - "Yes — and the generated stack was wrong or incomplete (details below)"
+        - "Yes — it worked, but I think this belongs in the supported set"
+        - "No, not yet"
+    validations:
+      required: true
+
+  - type: textarea
+    id: gaps
+    attributes:
+      label: What the generated stack got wrong
+      description: Skip if you have not run `/fetch-stack`.
+    validations:
+      required: false
+
+  - type: textarea
+    id: commands
+    attributes:
+      label: Test, security, and lint commands for this stack
+      description: >
+        The three commands the quality gates would run. Every STACK.md must declare these —
+        `init-project-layer.sh` reads them to build a project's gate configuration.
+      placeholder: |
+        test:     go test ./... -cover
+        security: govulncheck ./...
+        lint:     golangci-lint run
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: maintain
+    attributes:
+      label: Maintenance
+      options:
+        - label: I would be willing to help keep this stack current
+          required: false

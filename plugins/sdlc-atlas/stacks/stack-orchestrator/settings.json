@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python stacks/stack-orchestrator/bin/stack_fetcher.py*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"stacks/stack-orchestrator/bin/stack_fetcher.py\" --detect 2>/dev/null || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "InstructionsLoaded": [
+      {
+        "matcher": "CLAUDE.md",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"stacks/stack-orchestrator/bin/stack_fetcher.py\" --detect 2>/dev/null || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

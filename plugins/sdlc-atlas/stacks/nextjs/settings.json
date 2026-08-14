@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next *)",
+      "Bash(npx jest *)",
+      "Bash(npx eslint *)",
+      "Bash(npx tsc *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm audit *)",
+      "Bash(npx prettier *)",
+      "Bash(npx prisma *)"
+    ],
+    "deny": [
+      "Bash(npx prisma db push --force-reset *)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install*)",
+      "Bash(npm ci*)",
+      "Bash(npm run build*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run test*)",
+      "Bash(npm audit*)",
+      "Bash(pnpm install*)",
+      "Bash(pnpm run build*)",
+      "Bash(pnpm run lint*)",
+      "Bash(pnpm run test*)",
+      "Bash(pnpm audit*)",
+      "Bash(nest generate*)",
+      "Bash(nest build*)",
+      "Bash(nest test*)",
+      "Bash(nest info*)",
+      "Bash(jest*)",
+      "Bash(eslint*)",
+      "Bash(prettier --check*)",
+      "Bash(npx typeorm migration:show*)",
+      "Bash(npx typeorm migration:generate*)",
+      "Bash(npx typeorm migration:create*)",
+      "Bash(npx prisma migrate dev*)",
+      "Bash(npx prisma migrate diff*)",
+      "Bash(npx prisma validate*)",
+      "Bash(npx prisma generate*)"
+    ],
+    "deny": [
+      "Bash(npx typeorm migration:revert*)",
+      "Bash(npx typeorm schema:drop*)",
+      "Bash(npx prisma migrate reset*)",
+      "Bash(npx prisma migrate deploy*)",
+      "Bash(npx prisma db push --force-reset*)",
+      "Bash(dropdb*)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}

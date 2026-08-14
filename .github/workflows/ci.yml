@@ -1,0 +1,101 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+
+name: CI
+
+# Deliberately `pull_request`, never `pull_request_target` — a forked PR must never get
+# access to a repo secret. Nothing here needs one (public runners, no API keys), so a
+# fork PR runs identically to an in-repo PR.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# This repo is ~330 files of Markdown capability definitions plus a dozen install scripts.
+# There is no application code and no test suite, so there is deliberately no test matrix,
+# no integration matrix, and no typechecker here — those jobs would be green without
+# proving anything. Each job below can genuinely fail on a real defect.
+jobs:
+  validate:
+    name: Validate plugin + capability definitions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Checks manifest shape: plugin.json / marketplace.json well-formed, declared
+      # command/agent/skill directories actually resolve.
+      - name: Validate plugin manifests
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate .
+
+      # Checks what manifest shape alone cannot: agent frontmatter is parseable, every
+      # skill an agent names exists, every command maps to a real agent. A broken
+      # reference here ships a plugin that fails at runtime for every user.
+      - name: Validate agent frontmatter and skill references
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+          python scripts/validate_agents.py
+
+  lint:
+    name: Lint scripts and links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No `|| true` — a shellcheck finding fails the job. The installers are the first
+      # thing a new user runs; a broken one is the worst possible first impression.
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y shellcheck
+          find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck --severity=warning
+
+      - name: Markdown link check
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Offline: verifies relative links between the ~330 in-repo Markdown files.
+          # External URLs are excluded — they rot for reasons unrelated to a given PR
+          # and would make CI fail on unrelated schedules.
+          args: --offline --no-progress --include-fragments '**/*.md'
+          fail: true
+
+  hygiene:
+    name: Secret scan + required files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Real scanner with a real exit code, replacing a grep for the words
+      # "password|secret|token" that only ever echoed a warning.
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Required governance files present
+        run: |
+          missing=0
+          for f in LICENSE README.md CONTRIBUTING.md CODE_OF_CONDUCT.md \
+                   SECURITY.md CHANGELOG.md GOVERNANCE.md \
+                   plugins/sdlc-atlas/.claude-plugin/plugin.json; do
+            if [ -f "$f" ]; then
+              echo "  ok       $f"
+            else
+              echo "::error::missing required file: $f"
+              missing=1
+            fi
+          done
+          exit "$missing"

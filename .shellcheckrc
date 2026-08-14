@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+#
+# CI runs `shellcheck --severity=warning`, so anything not disabled here fails the build.
+# Only two checks are suppressed, both repo-wide and both deliberate:
+
+# SC2044: "for loops over find output are fragile."
+# True in general — it breaks on filenames containing whitespace or newlines. Every use
+# here iterates paths inside this repository (platform/, stacks/, projects/), where names
+# are constrained to lowercase slugs and validated by tools/verify-package.sh. Rewriting
+# nine loops to `while IFS= read -r` guards against filenames that cannot occur.
+disable=SC2044
+
+# SC2034: "variable appears unused."
+# Fires on variables assigned for documentation or future use inside case-arm argument
+# parsers. Genuinely unused values were removed; what remains is intentional.
+disable=SC2034

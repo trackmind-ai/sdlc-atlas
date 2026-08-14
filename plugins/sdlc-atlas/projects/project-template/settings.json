@@ -1,0 +1,22 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .claude/gate-off ] && exit 0; f=$(sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | head -1); if [ -z \"$f\" ]; then echo \"BLOCKED: approval hook could not parse the tool payload, so it cannot verify this edit is covered by an approved spec. Failing closed. Report at https://github.com/trackmind-ai/sdlc-atlas/issues\"; exit 2; fi; case \"$f\" in */.claude/*|*/docs/*|*/designs/*|*knowledge.md|*README*|*.gitignore|*CHANGELOG*) exit 0;; *) [ -f .claude/memory/approvals/ACTIVE ] || { echo \"BLOCKED: no approved spec. Production-code edits require an approval marker (.claude/memory/approvals/ACTIVE). Run /approve-spec, approve a /fix, or confirm /bootstrap. Escape hatch for non-pipeline work: touch .claude/gate-off (visible in git status).\"; exit 2; };; esac; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker build*)",
+      "Bash(docker build --check*)",
+      "Bash(docker buildx build*)",
+      "Bash(docker compose config*)",
+      "Bash(docker compose up*)",
+      "Bash(docker compose build*)",
+      "Bash(docker compose ps*)",
+      "Bash(docker compose logs*)",
+      "Bash(hadolint*)",
+      "Bash(docker scout cves*)",
+      "Bash(docker scout quickview*)",
+      "Bash(trivy image*)",
+      "Bash(docker images*)",
+      "Bash(docker history*)",
+      "Bash(docker inspect*)",
+      "Bash(docker --version*)",
+      "Bash(docker info*)"
+    ],
+    "deny": [
+      "Bash(docker system prune -af*)",
+      "Bash(docker rm -f*)",
+      "Bash(docker push*)",
+      "Bash(docker compose push*)",
+      "Bash(docker volume rm*)",
+      "Bash(docker volume prune*)",
+      "Bash(docker login*)"
+    ]
+  }
+}

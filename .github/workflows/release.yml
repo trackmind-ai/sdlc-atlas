@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+name: Create release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog section
+        id: changelog
+        run: |
+          python - <<'EOF'
+          import re, os
+          version = os.environ["VERSION"]
+          with open("CHANGELOG.md") as f:
+              content = f.read()
+          pattern = rf"## \[{re.escape(version)}\].*?(?=## \[|\Z)"
+          match = re.search(pattern, content, re.DOTALL)
+          notes = match.group(0).strip() if match else "See CHANGELOG.md for details."
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"NOTES<<EOF\n{notes}\nEOF\n")
+          EOF
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.version.outputs.VERSION }}"
+          body: ${{ steps.changelog.outputs.NOTES }}
+          draft: false
+          prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') || contains(github.ref, '-alpha') }}

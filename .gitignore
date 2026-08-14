@@ -1,0 +1,47 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+dist/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Claude Code session state (project-local, not committed)
+.claude/
+AgenticAI-SDLC/projects/*
+AgenticAI-Projects/*
+claude/*
+
+# Gate results (generated per pipeline run)
+gate_results.md
+# Converter output: `install.sh --target cursor` generates projects/project-template-cursor/
+# from projects/project-template/. Build artifact, not source.
+plugins/sdlc-atlas/projects/project-template-cursor/
+
+# Scratch dirs from tools/write-project-claude.sh (cleaned up on success; may survive a crash)
+plugins/sdlc-atlas/projects/tmp-write-*/

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npm audit *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm run *)",
+      "Bash(yarn install *)",
+      "Bash(yarn run *)",
+      "Bash(npx vite *)",
+      "Bash(npx vitest *)",
+      "Bash(npx vue-tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier *)",
+      "Bash(npm create vite@latest *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(npm publish *)"
+    ]
+  }
+}

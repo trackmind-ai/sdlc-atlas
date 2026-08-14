@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+name: Feature request
+description: Propose a new agent, skill, command, or pipeline behavior
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Requesting a **new stack**? Use the *Stack request* template instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: >
+        Describe the situation you hit, not the solution you have in mind. The most useful
+        requests start from a real pipeline run that went badly.
+      placeholder: |
+        On a brownfield repo with no tests, the test gate blocks every feature, so there is
+        no way to land the first change that adds tests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like it to do
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of capability is this
+      description: See ARCHITECTURE.md for what each type is responsible for.
+      options:
+        - Agent (a role with judgment)
+        - Skill (a procedure an agent loads)
+        - Command (a new entry point)
+        - Pipeline behavior (gate order, profiles, approvals)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried or considered instead
+      description: Including "I worked around it by…" — workarounds are useful signal.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: governance
+    attributes:
+      label: Governance check
+      description: >
+        Changes that weaken the approval model need a strong justification, because the
+        gates are the product. This is not a blocker — just be explicit.
+      options:
+        - label: This does not let the pipeline write production code without an approved spec
+          required: false
+        - label: This does not widen an agent's tool grants without saying why
+          required: false

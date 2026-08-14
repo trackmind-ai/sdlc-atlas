@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+#
+# Enforces the contribution lanes from CONTRIBUTING.md. Combined with branch protection's
+# "require review from Code Owners", this makes the maintainer-gated lanes mechanical rather
+# than a matter of remembering.
+#
+# @trackmind-ai/maintainers must exist as a real GitHub team before these rules resolve — a
+# CODEOWNERS entry naming a team that does not exist silently requests no review at all.
+# Create the team as part of org setup, then verify on a test PR that reviewers are requested.
+
+# Lane A — agents and skills. Executable instructions with tool grants: the highest blast
+# radius in the repo.
+/plugins/sdlc-atlas/platform/agents/     @trackmind-ai/maintainers
+/plugins/sdlc-atlas/platform/skills/     @trackmind-ai/maintainers
+/plugins/sdlc-atlas/platform/commands/   @trackmind-ai/maintainers
+
+# Policy and governance enforcement: these files ARE the permission boundary.
+/plugins/sdlc-atlas/platform/settings.json               @trackmind-ai/maintainers
+/plugins/sdlc-atlas/projects/project-template/settings.json  @trackmind-ai/maintainers
+/plugins/sdlc-atlas/platform/CLAUDE.md                   @trackmind-ai/maintainers
+
+# Lane C — installers, tooling, CI. First thing a user runs; decides what skips review.
+/plugins/sdlc-atlas/install.sh      @trackmind-ai/maintainers
+/plugins/sdlc-atlas/setup-all.sh    @trackmind-ai/maintainers
+/plugins/sdlc-atlas/setup.ps1       @trackmind-ai/maintainers
+/plugins/sdlc-atlas/tools/          @trackmind-ai/maintainers
+/plugins/sdlc-atlas/platform/scripts/  @trackmind-ai/maintainers
+/scripts/                           @trackmind-ai/maintainers
+/.github/                           @trackmind-ai/maintainers
+/Makefile                           @trackmind-ai/maintainers
+/tasks.ps1                          @trackmind-ai/maintainers
+
+# Plugin identity: the published name and version users depend on.
+/plugins/sdlc-atlas/.claude-plugin/  @trackmind-ai/maintainers
+/.claude-plugin/                     @trackmind-ai/maintainers
+
+# Governance and legal.
+/LICENSE           @trackmind-ai/maintainers
+/SECURITY.md       @trackmind-ai/maintainers
+/GOVERNANCE.md     @trackmind-ai/maintainers
+/CODE_OF_CONDUCT.md @trackmind-ai/maintainers
+/CONTRIBUTING.md   @trackmind-ai/maintainers
+
+# Lane B (stacks) and Lane D (docs) are deliberately NOT pinned — they take the lighter
+# review path described in CONTRIBUTING.md.

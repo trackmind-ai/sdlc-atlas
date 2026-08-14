@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ng serve:*)",
+      "Bash(ng build:*)",
+      "Bash(ng test:*)",
+      "Bash(ng lint:*)",
+      "Bash(ng generate:*)",
+      "Bash(ng add:*)",
+      "Bash(npm install:*)",
+      "Bash(npm audit:*)",
+      "Bash(npx tsc:*)"
+    ],
+    "deny": [
+      "Bash(ng build --configuration=production:*)",
+      "Bash(rm -rf dist:*)",
+      "Bash(ng deploy:*)"
+    ]
+  }
+}

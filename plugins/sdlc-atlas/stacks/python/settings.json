@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest:*)",
+      "Bash(ruff check:*)",
+      "Bash(ruff format:*)",
+      "Bash(mypy:*)",
+      "Bash(bandit:*)",
+      "Bash(pip-audit:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m:*)",
+      "Bash(python src/:*)",
+      "Bash(uv run:*)"
+    ],
+    "deny": [
+      "Bash(python -c \"import os; os.system(*)",
+      "Bash(rm -rf:*)",
+      "Bash(python -c \"import subprocess*)"
+    ]
+  }
+}

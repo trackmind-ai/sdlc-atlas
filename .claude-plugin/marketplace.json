@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "trackmind-sdlc-atlas-dev",
+  "owner": {
+    "name": "Trackmind",
+    "email": "oss@trackmind.com"
+  },
+  "description": "LOCAL DEVELOPMENT ONLY. Lets `make load` / `tasks.ps1 load` install this checkout as a plugin. The published catalog is trackmind-ai/marketplace, whose marketplace name is `trackmind` — this one is deliberately named differently so adding it can never replace the published one.",
+  "plugins": [
+    {
+      "name": "sdlc-atlas",
+      "source": "./plugins/sdlc-atlas",
+      "description": "Agent-driven SDLC platform: governed pipelines from requirement to production-ready code.",
+      "category": "workflow",
+      "keywords": [
+        "sdlc",
+        "agents",
+        "pipeline",
+        "quality-gates",
+        "specifications"
+      ]
+    }
+  ]
+}

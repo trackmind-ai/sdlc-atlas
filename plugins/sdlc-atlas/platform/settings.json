@@ -1,0 +1,106 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(mkdir*)",
+      "Bash(cp *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(echo *)",
+      "Bash(bash */scripts/setup-stacks.sh*)",
+      "Bash(bash */scripts/run-gates.sh*)",
+      "Bash(python */stack_fetcher.py*)",
+      "Bash(py */stack_fetcher.py*)",
+      "Bash(python3 */stack_fetcher.py*)",
+      "Bash(find *)",
+      "Read(*)",
+      "Grep(*)",
+      "Glob(*)",
+      "Bash(ls *)",
+      "Bash(ls)",
+      "Bash(cat *)",
+      "Bash(echo *)",
+      "Bash(pwd)",
+      "Bash(which *)",
+      "Bash(command -v *)",
+      "Bash(mkdir*)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(touch *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(bash install.sh*)",
+      "Bash(bash *install.sh*)",
+      "Bash(python stacks/stack-orchestrator/bin/stack_fetcher.py*)",
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "Bash(pytest*)",
+      "Bash(python -m pytest*)",
+      "Bash(pip-audit*)",
+      "Bash(pip install*)",
+      "Bash(bandit*)",
+      "Bash(ruff*)",
+      "Bash(mypy*)",
+      "Bash(black*)",
+      "Bash(isort*)",
+      "Bash(flake8*)",
+      "Bash(npm test*)",
+      "Bash(npm run*)",
+      "Bash(npm audit*)",
+      "Bash(npm install*)",
+      "Bash(npm ci*)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(node_modules/.bin/*)",
+      "Bash(./node_modules/.bin/*)",
+      "Bash(cd *)",
+      "Bash(jq *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(xargs *)",
+      "Bash(claude mcp list*)",
+      "Bash(claude mcp get*)",
+      "Bash(claude mcp add*)",
+      "Bash(curl -fsSL https://get.maestro.mobile.dev*)",
+      "Bash(maestro *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Edit(.env*)",
+      "Edit(**/secrets*)",
+      "Edit(.claude/proposals/*.approved.md)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | head -1); if [ -z \"$f\" ]; then echo \"BLOCKED: capability-file hook could not parse the tool payload, so it cannot verify this edit is allowed. Failing closed. Report at https://github.com/trackmind-ai/sdlc-atlas/issues\"; exit 2; fi; case \"$f\" in */.claude/agents/*|*/.claude/skills/*|*/.claude/commands/*) if [ ! -f \"$f\" ]; then exit 0; fi; echo \"BLOCKED: capability files already exist - change only via /approve-proposal (sdlc-atlas governance).\"; exit 2;; esac; exit 0"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "d=\"${CLAUDE_PROJECT_DIR:-.}/.claude/memory\"; s=\"$d/orchestrator_state.md\"; g=\"$d/gate_results.md\"; if [ -f \"$s\" ]; then echo 'Reminder: verify orchestrator_state.md reflects the last completed step.'; if grep -qi 'in-progress' \"$s\"; then echo 'WARNING: orchestrator_state.md shows an in-progress phase - if work stopped, next_action is the resume point.'; fi; if grep -qi 'complete' \"$s\" && [ -f \"$g\" ] && grep -Eq 'PENDING|\\*\\*FAIL\\*\\*' \"$g\"; then echo 'WARNING: state claims a phase complete but gate_results.md still has PENDING/FAIL rows (browser QA row 4? review row 5?). Gates are NOT done - resolve them before treating the pipeline as complete.'; fi; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

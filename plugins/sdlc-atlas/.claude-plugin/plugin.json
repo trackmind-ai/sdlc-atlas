@@ -1,0 +1,48 @@
+{
+  "name": "sdlc-atlas",
+  "description": "Agent-driven SDLC platform. Takes a requirement to production-ready code through governed pipelines: versioned specs, approval gates, and ordered quality gates across a four-layer capability model (platform, stacks, organization, project).",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": {
+    "name": "Trackmind",
+    "email": "oss@trackmind.com"
+  },
+  "homepage": "https://github.com/trackmind-ai/sdlc-atlas",
+  "repository": "https://github.com/trackmind-ai/sdlc-atlas",
+  "keywords": [
+    "sdlc",
+    "agents",
+    "pipeline",
+    "quality-gates",
+    "specifications",
+    "code-review",
+    "scaffolding"
+  ],
+  "commands": "./platform/commands",
+  "agents": [
+    "./platform/agents/acceptance-agent.md",
+    "./platform/agents/adr-agent.md",
+    "./platform/agents/architecture-agent.md",
+    "./platform/agents/bootstrap-agent.md",
+    "./platform/agents/debug-agent.md",
+    "./platform/agents/design-concept-agent.md",
+    "./platform/agents/docs-agent.md",
+    "./platform/agents/forge-agent.md",
+    "./platform/agents/incident-agent.md",
+    "./platform/agents/intake-assessment-agent.md",
+    "./platform/agents/orchestrator.md",
+    "./platform/agents/product-strategy-agent.md",
+    "./platform/agents/qa-agent.md",
+    "./platform/agents/release-agent.md",
+    "./platform/agents/requirements-agent.md",
+    "./platform/agents/retro-agent.md",
+    "./platform/agents/review-agent.md",
+    "./platform/agents/security-agent.md",
+    "./platform/agents/setup-agent.md",
+    "./platform/agents/sonar-agent.md",
+    "./platform/agents/spec-agent.md",
+    "./platform/agents/test-agent.md",
+    "./platform/agents/ux-research-agent.md"
+  ],
+  "skills": "./platform/skills"
+}

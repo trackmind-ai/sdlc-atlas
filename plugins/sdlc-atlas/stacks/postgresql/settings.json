@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql -c \\d*)",
+      "Bash(psql -c \\dt*)",
+      "Bash(psql -c \\di*)",
+      "Bash(psql -c \\du*)",
+      "Bash(psql -c EXPLAIN*)",
+      "Bash(psql -c SELECT*)",
+      "Bash(psql --command=EXPLAIN*)",
+      "Bash(psql --command=SELECT*)",
+      "Bash(pg_dump*)",
+      "Bash(pg_dumpall --globals-only*)",
+      "Bash(alembic upgrade --sql*)",
+      "Bash(alembic history*)",
+      "Bash(alembic current*)",
+      "Bash(alembic check*)",
+      "Bash(python manage.py migrate --plan*)",
+      "Bash(python manage.py migrate --check*)",
+      "Bash(python manage.py sqlmigrate*)",
+      "Bash(node-pg-migrate --dry-run*)"
+    ],
+    "deny": [
+      "Bash(psql -c DROP DATABASE*)",
+      "Bash(psql -c DROP TABLE*)",
+      "Bash(psql -c TRUNCATE*)",
+      "Bash(psql -c DELETE*)",
+      "Bash(psql -c ALTER TABLE*)",
+      "Bash(dropdb*)",
+      "Bash(pg_restore*--clean*)",
+      "Bash(pg_restore*--create*)",
+      "Bash(alembic downgrade*)",
+      "Bash(alembic upgrade head --sql=false*)"
+    ]
+  }
+}

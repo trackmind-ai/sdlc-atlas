@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+name: Bug report
+description: An agent, command, or gate did something wrong, crashed, or hung
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security issues do not belong here.** If this is a way to bypass an approval gate,
+        edit capability files outside `/approve-proposal`, or leak a credential, report it
+        privately — see [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you ran, what you expected, and what actually happened instead.
+      placeholder: |
+        Ran `/feature add due dates` on a react + fastapi project. After the spec was
+        approved, the test gate reported PASS but no tests had run.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence that shows the problem.
+      placeholder: |
+        1. /start on an empty folder, choose greenfield
+        2. /feature "..."
+        3. /approve-spec <slug>
+        4. Observe gate_results.md row 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: pipeline-state
+    attributes:
+      label: Pipeline state
+      description: >
+        For anything pipeline-related, these two files explain more than any description:
+        `.claude/memory/orchestrator_state.md` and `.claude/memory/gate_results.md`.
+        Paste the relevant parts — and please redact tokens, internal URLs, and customer names.
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: sdlc-atlas version
+      description: "From `/plugin` in Claude Code, or the tag you installed. `main` is fine."
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      description: >
+        Windows is worth calling out — several past bugs were Windows-only, caused by
+        `python3` resolving to a stub that exits without running.
+      options:
+        - Linux
+        - macOS
+        - Windows (Git Bash)
+        - Windows (WSL)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: stacks
+    attributes:
+      label: Stacks in use
+      placeholder: "react, fastapi, postgresql"
+    validations:
+      required: false

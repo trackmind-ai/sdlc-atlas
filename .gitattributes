@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 Trackmind
+# SPDX-License-Identifier: MIT
+
+# Normalize to LF in the repository for everything text-like.
+* text=auto eol=lf
+
+# Shell scripts MUST be LF in the working tree, on every platform. A `\r` at the end of a
+# shebang or a command line makes the script fail on Linux/macOS at runtime ("bad
+# interpreter", "command not found") — and these are the installers a new user runs first.
+# Without this, a contributor whose git has core.autocrlf=true can commit CRLF and break
+# them for everyone else.
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Same reasoning for anything else parsed by a POSIX tool or a strict parser.
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+Makefile text eol=lf
+
+# PowerShell is the one place CRLF is the native convention.
+*.ps1 text eol=crlf
+
+# Binaries: never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
