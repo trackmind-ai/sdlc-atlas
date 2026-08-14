@@ -24,11 +24,11 @@ jobs:
     name: Validate plugin + capability definitions
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: "20"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -52,7 +52,7 @@ jobs:
     name: Lint scripts and links
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # No `|| true` — a shellcheck finding fails the job. The installers are the first
       # thing a new user runs; a broken one is the worst possible first impression.
@@ -74,16 +74,26 @@ jobs:
     name: Secret scan + required files
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       # Real scanner with a real exit code, replacing a grep for the words
       # "password|secret|token" that only ever echoed a warning.
+      #
+      # The gitleaks BINARY, not gitleaks/gitleaks-action@v2: that action refuses to run on
+      # any organization-owned repository without a paid GITLEAKS_LICENSE secret ("[org] is
+      # an organization. License key is required"), which fails the job without scanning
+      # anything. The binary itself is MIT-licensed and free — same detection, no license.
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: "8.30.1"
+        run: |
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          # `git` mode scans full history, which is the point of fetch-depth: 0 above.
+          /tmp/gitleaks git . --redact --verbose --exit-code 1
 
       - name: Required governance files present
         run: |
