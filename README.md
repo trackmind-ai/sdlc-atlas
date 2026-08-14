@@ -165,6 +165,19 @@ instructions, not documentation.
 Docs fixes are the easiest place to start, and telling us where the docs misled you is genuinely
 useful.
 
+## Maintainers
+
+Maintained by **Trackmind** — [`@trackmind-ai/maintainers`](https://github.com/orgs/trackmind-ai/teams/maintainers).
+
+That team is the required reviewer for the maintainer-gated paths in
+[`.github/CODEOWNERS`](.github/CODEOWNERS): agents, skills, commands, `settings.json`,
+installers, CI, and the plugin manifests. Everything else — stacks and docs — takes the lighter
+review path.
+
+- **General contact:** `oss@trackmind.com`
+- **Security reports:** privately, never a public issue — see [SECURITY.md](SECURITY.md)
+- **How maintainers are added:** [GOVERNANCE.md](GOVERNANCE.md) (nomination issue, 7-day vote)
+
 ## Security
 
 Agents in this platform read code, run commands, and write files. [SECURITY.md](SECURITY.md)
