@@ -61,7 +61,7 @@ For every task that passed the registry check, check all three canonical paths
 in a single bash call. A skill is VERIFIED when at least one path returns a real file:
 
 ```bash
-bash -c 'P1="PROJECT_ROOT/.claude/skills/<stack>/<skill-name>/SKILL.md"; P2="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/stacks/<stack>/skills/<skill-name>/SKILL.md"; P3="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/<skill-name>.md"; if [ -f "$P1" ]; then echo "FOUND:path1:$P1"; elif [ -f "$P2" ]; then echo "FOUND:path2:$P2"; elif [ -f "$P3" ]; then echo "FOUND:path3:$P3"; else echo "MISSING"; fi'
+bash -c 'P1="PROJECT_ROOT/.claude/skills/<stack>/<skill-name>/SKILL.md"; P2="${CLAUDE_PLUGIN_ROOT:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}}/stacks/<stack>/skills/<skill-name>/SKILL.md"; P3="${CLAUDE_PLUGIN_ROOT}/platform/skills/<skill-name>/SKILL.md"; P4="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/<skill-name>/SKILL.md"; P5="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/<skill-name>.md"; if [ -f "$P1" ]; then echo "FOUND:path1:$P1"; elif [ -f "$P2" ]; then echo "FOUND:path2:$P2"; elif [ -f "$P3" ]; then echo "FOUND:path3:$P3"; elif [ -f "$P4" ]; then echo "FOUND:path4:$P4"; elif [ -f "$P5" ]; then echo "FOUND:path5:$P5"; else echo "MISSING"; fi'
 ```
 
 Replace `<stack>` with the stack name from CLAUDE.md §2 `stack.primary`; if
@@ -98,9 +98,10 @@ Task:           <task description>
 Required skill: <skill-name>
 Registry:       FOUND in CLAUDE.md §6.2  ← or MISSING if not listed
 Disk:
-  path1  PROJECT_ROOT/.claude/skills/<stack>/<skill-name>/SKILL.md  → MISSING
-  path2  $HOME/.claude/stacks/<stack>/skills/<skill-name>/SKILL.md  → MISSING
-  path3  $HOME/.claude/skills/<skill-name>.md                       → MISSING
+  path1  PROJECT_ROOT/.claude/skills/<stack>/<skill-name>/SKILL.md               → MISSING
+  path2  ${CLAUDE_PLUGIN_ROOT}/platform/skills/<skill-name>/SKILL.md             → MISSING
+  path3  $HOME/.claude/stacks/<stack>/skills/<skill-name>/SKILL.md               → MISSING
+  path4  $HOME/.claude/skills/<skill-name>/SKILL.md (or .md)                     → MISSING
 
 Closest existing skill: <skill-name> — <what it codifies>
   (covers ~X% — does not cover: <what is missing>)

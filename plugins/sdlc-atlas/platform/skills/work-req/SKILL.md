@@ -183,7 +183,7 @@ these items, do not touch other components.
 Project-local copy first, platform-home fallback — most projects only have the
 platform-home copy since install.sh --platform never writes a project-local one:
 ```bash
-cd "PROJECT_ROOT" && GATES_SCRIPT=".claude/scripts/run-gates.sh"; [ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="$HOME/.claude/scripts/run-gates.sh"; bash "$GATES_SCRIPT"
+cd "PROJECT_ROOT" && GATES_SCRIPT=".claude/scripts/run-gates.sh"; [ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/platform/scripts/run-gates.sh"; [ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/scripts/run-gates.sh"; [ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="$HOME/.claude/scripts/run-gates.sh"; bash "$GATES_SCRIPT"
 ```
 
 Never skipped. On failure: report, do not update tracking, stop.

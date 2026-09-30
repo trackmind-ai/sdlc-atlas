@@ -368,11 +368,13 @@ Extract `project_skills_registry` from the bundle if present. If the bundle is m
 
 **Step 2** — Registry check: confirm each required skill appears in the `project_skills_registry` from Step 0 (or from CLAUDE.md §6.1–6.3 / knowledge.md §Project skills if the bundle was missing).
 
-**Step 3** — On-disk verification: probe all three canonical paths per skill:
+**Step 3** — On-disk verification: probe canonical paths per skill:
 ```bash
-ls "PROJECT_ROOT/.claude/skills/<stack>/<skill-name>/SKILL.md" 2>/dev/null && echo "FOUND:path1" || echo "MISSING:path1"
-ls "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/stacks/<stack>/skills/<skill-name>/SKILL.md" 2>/dev/null && echo "FOUND:path2" || echo "MISSING:path2"
-ls "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/<skill-name>.md" 2>/dev/null && echo "FOUND:path3" || echo "MISSING:path3"
+ls "PROJECT_ROOT/.claude/skills/<stack>/<skill-name>/SKILL.md" 2>/dev/null && echo "FOUND:path1" || \
+ls "${CLAUDE_PLUGIN_ROOT:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}}/stacks/<stack>/skills/<skill-name>/SKILL.md" 2>/dev/null && echo "FOUND:path2" || \
+ls "${CLAUDE_PLUGIN_ROOT}/platform/skills/<skill-name>/SKILL.md" 2>/dev/null && echo "FOUND:path3" || \
+ls "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/<skill-name>/SKILL.md" 2>/dev/null && echo "FOUND:path4" || \
+ls "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills/<skill-name>.md" 2>/dev/null && echo "FOUND:path5" || echo "MISSING"
 ```
 
 **Step 4 — HARD BLOCK if any probe returns MISSING:**

@@ -139,7 +139,7 @@ instead — the Cursor equivalent of CLAUDE.md, per `cursor_write_rule`'s conven
 
 **If EXISTS — one-time staleness check (informational, never auto-fixes):**
 ```bash
-[ -f "PROJECT_ROOT/LAYER_DIR/agents/bootstrap-agent.md" ] && [ -f "$HOME/.claude/agents/bootstrap-agent.md" ] && cmp -s "PROJECT_ROOT/LAYER_DIR/agents/bootstrap-agent.md" "$HOME/.claude/agents/bootstrap-agent.md" && echo "IN_SYNC" || echo "CHECK_SYNC"
+REF_BOOTSTRAP="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/platform/agents/bootstrap-agent.md"; [ -f "$REF_BOOTSTRAP" ] || REF_BOOTSTRAP="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/agents/bootstrap-agent.md"; [ -f "$REF_BOOTSTRAP" ] || REF_BOOTSTRAP="$HOME/.claude/agents/bootstrap-agent.md"; [ -f "PROJECT_ROOT/LAYER_DIR/agents/bootstrap-agent.md" ] && [ -f "$REF_BOOTSTRAP" ] && cmp -s "PROJECT_ROOT/LAYER_DIR/agents/bootstrap-agent.md" "$REF_BOOTSTRAP" && echo "IN_SYNC" || echo "CHECK_SYNC"
 ```
 This is a cheap single-file proxy check, not a full audit — and only
 meaningful when LAYER_DIR is `.claude` (comparing against the `$HOME/.claude/`

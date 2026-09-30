@@ -8,16 +8,15 @@ PROJECT_ROOT = output above.
 
 ## Step 2 — Run the gate script
 ```bash
-bash "PROJECT_ROOT/.claude/scripts/run-gates.sh"
-```
-If that file does not exist, fall back to:
-```bash
-bash "$HOME/.claude/scripts/run-gates.sh"
+GATES_SCRIPT="PROJECT_ROOT/.claude/scripts/run-gates.sh"
+[ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/platform/scripts/run-gates.sh"
+[ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/scripts/run-gates.sh"
+[ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="$HOME/.claude/scripts/run-gates.sh"
 ```
 The script must be run from PROJECT_ROOT so relative paths inside it resolve
 correctly:
 ```bash
-cd "PROJECT_ROOT" && bash ".claude/scripts/run-gates.sh"
+cd "PROJECT_ROOT" && bash "$GATES_SCRIPT"
 ```
 
 THE GATE ORDER LIVES IN THAT SCRIPT — code, not prose: onboarding → test → security → lint → build → browser QA,

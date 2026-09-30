@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | head -1); if [ -z \"$f\" ]; then echo \"BLOCKED: capability-file hook could not parse the tool payload, so it cannot verify this edit is allowed. Failing closed. Report at https://github.com/trackmind-ai/sdlc-atlas/issues\"; exit 2; fi; case \"$f\" in */.claude/agents/*|*/.claude/skills/*|*/.claude/commands/*) if [ ! -f \"$f\" ]; then exit 0; fi; echo \"BLOCKED: capability files already exist - change only via /approve-proposal (sdlc-atlas governance).\"; exit 2;; esac; exit 0"
+          },
+          {
+            "type": "command",
+            "command": "d=\"${CLAUDE_PROJECT_DIR:-.}\"; [ -f \"$d/.claude/gate-off\" ] && exit 0; f=$(sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | head -1); if [ -z \"$f\" ]; then echo \"BLOCKED: approval hook could not parse the tool payload, so it cannot verify this edit is covered by an approved spec. Failing closed. Report at https://github.com/trackmind-ai/sdlc-atlas/issues\"; exit 2; fi; case \"$f\" in */.claude/*|*/docs/*|*/designs/*|*knowledge.md|*README*|*.gitignore|*CHANGELOG*) exit 0;; *) [ -f \"$d/.claude/memory/approvals/ACTIVE\" ] || { echo \"BLOCKED: no approved spec. Production-code edits require an approval marker (.claude/memory/approvals/ACTIVE). Run /approve-spec, approve a /fix, or confirm /bootstrap. Escape hatch for non-pipeline work: touch .claude/gate-off (visible in git status).\"; exit 2; };; esac; exit 0"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "d=\"${CLAUDE_PROJECT_DIR:-.}/.claude/memory\"; s=\"$d/orchestrator_state.md\"; g=\"$d/gate_results.md\"; if [ -f \"$s\" ]; then echo 'Reminder: verify orchestrator_state.md reflects the last completed step.'; if grep -qi 'in-progress' \"$s\"; then echo 'WARNING: orchestrator_state.md shows an in-progress phase - if work stopped, next_action is the resume point.'; fi; if grep -qi 'complete' \"$s\" && [ -f \"$g\" ] && grep -Eq 'PENDING|\\*\\*FAIL\\*\\*' \"$g\"; then echo 'WARNING: state claims a phase complete but gate_results.md still has PENDING/FAIL rows (browser QA row 4? review row 5?). Gates are NOT done - resolve them before treating the pipeline as complete.'; fi; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

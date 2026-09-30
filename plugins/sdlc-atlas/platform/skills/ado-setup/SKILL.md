@@ -87,9 +87,22 @@ any other authentication strategy.
 Copy the skill so `/feature` can invoke it via the Skill tool:
 
 ```bash
-mkdir -p "PROJECT_ROOT/.claude/skills"
-cp "PLATFORM_HOME/skills/ado-work-item.md" "PROJECT_ROOT/.claude/skills/ado-work-item.md"
-echo "✔ ado-work-item skill installed"
+mkdir -p "PROJECT_ROOT/.claude/skills/ado-work-item"
+SRC_SKILL=""
+if [ -f "PLATFORM_HOME/skills/ado-work-item/SKILL.md" ]; then
+  SRC_SKILL="PLATFORM_HOME/skills/ado-work-item/SKILL.md"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/platform/skills/ado-work-item/SKILL.md" ]; then
+  SRC_SKILL="${CLAUDE_PLUGIN_ROOT}/platform/skills/ado-work-item/SKILL.md"
+elif [ -f "PLATFORM_HOME/skills/ado-work-item.md" ]; then
+  SRC_SKILL="PLATFORM_HOME/skills/ado-work-item.md"
+fi
+if [ -n "$SRC_SKILL" ]; then
+  cp "$SRC_SKILL" "PROJECT_ROOT/.claude/skills/ado-work-item/SKILL.md"
+  cp "$SRC_SKILL" "PROJECT_ROOT/.claude/skills/ado-work-item.md" 2>/dev/null || true
+  echo "✔ ado-work-item skill installed"
+else
+  echo "⚠ could not locate ado-work-item skill source"
+fi
 ```
 
 If the copy fails → print a warning and continue (skill will fall back to inline execution).

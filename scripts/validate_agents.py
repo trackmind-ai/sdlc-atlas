@@ -54,9 +54,11 @@ def extract_frontmatter(path):
 
 def get_skill_names():
     names = set()
-    for f in SKILLS_DIR.glob("*.md"):
+    # Support both skills/<name>/SKILL.md (Claude Code plugin format) and legacy flat *.md
+    skill_files = list(SKILLS_DIR.glob("*/SKILL.md")) + list(SKILLS_DIR.glob("*.md"))
+    for f in skill_files:
         fm = extract_frontmatter(f)
-        names.add(fm["name"] if fm and "name" in fm else f.stem)
+        names.add(fm["name"] if fm and "name" in fm else (f.parent.name if f.name == "SKILL.md" else f.stem))
     return names
 
 

@@ -51,7 +51,7 @@ head -5 "PROJECT_ROOT/.claude/specs/<feature_slug>/<change_slug>.md"
 Extract the title line (first `# ` heading) → **FEATURE_TITLE**
 
 **2e. Run knowledge harvesting (MANDATORY Agentic Learning):**
-Run the `/harvest-knowledge` routine (using `platform/skills/knowledge-harvesting.md`) to automatically scan recent logs, debug loops, and commits, and append new patterns and conventions to `PROJECT_ROOT/.claude/knowledge.md`. This must complete before staging so the updated knowledge base is committed together with the feature changes.
+Run the `/harvest-knowledge` routine (using `platform/skills/knowledge-harvesting/SKILL.md` or the `knowledge-harvesting` skill) to automatically scan recent logs, debug loops, and commits, and append new patterns and conventions to `PROJECT_ROOT/.claude/knowledge.md`. This must complete before staging so the updated knowledge base is committed together with the feature changes.
 
 ---
 

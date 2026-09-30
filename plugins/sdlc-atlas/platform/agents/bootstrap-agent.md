@@ -63,7 +63,7 @@ currently branch to (see the Cursor-fallback note in step 2 below).
      `skills/<stack>-bootstrap/SKILL.md` per Cursor's per-skill-folder shape)
    - `PLATFORM_HOME/stacks/<stack>/skills/<stack>-bootstrap.md` (stack layer
      — unaffected by LAYER_DIR, this is always the platform source location)
-   - `~/.claude/skills/project-bootstrap.md` (platform generic fallback —
+   - `${CLAUDE_PLUGIN_ROOT}/platform/skills/project-bootstrap/SKILL.md` or `~/.claude/skills/project-bootstrap.md` or `~/.claude/skills/project-bootstrap/SKILL.md` (platform generic fallback —
      Claude Code specific; if LAYER_DIR is `.cursor` and this path doesn't
      exist because the platform was installed with `--platform cursor`
      instead, fall back to `~/.cursor/skills/project-bootstrap/SKILL.md`)

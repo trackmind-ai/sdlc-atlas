@@ -503,8 +503,8 @@ Ask **one question**:
 If **no** → skip to A-Forge.
 
 If **yes** → invoke the Skill tool with name `ado-setup` (resolves from
-`PLATFORM_HOME/skills/ado-setup.md`). Do not conclude the skill is missing based
-on the project layer alone — check `PLATFORM_HOME/skills/` before filing any gap
+`PLATFORM_HOME/skills/ado-setup/SKILL.md` or `${CLAUDE_PLUGIN_ROOT}/platform/skills/ado-setup/SKILL.md`). Do not conclude the skill is missing based
+on the project layer alone — check the platform skills folder before filing any gap
 proposal. When the skill completes, go to A-Forge.
 
 ---
@@ -762,8 +762,8 @@ If `NOT_CONFIGURED` or PAT missing → ask **one question**:
 
 If **no** → go to asking about features.
 If **yes** → invoke the Skill tool with name `ado-setup` (resolves from
-`PLATFORM_HOME/skills/ado-setup.md`). Do not conclude the skill is missing based
-on the project layer alone — check `PLATFORM_HOME/skills/` before filing any gap
+`PLATFORM_HOME/skills/ado-setup/SKILL.md` or `${CLAUDE_PLUGIN_ROOT}/platform/skills/ado-setup/SKILL.md`). Do not conclude the skill is missing based
+on the project layer alone — check the platform skills folder before filing any gap
 proposal. When it completes, go to asking about features.
 
 ---

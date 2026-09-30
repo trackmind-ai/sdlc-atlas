@@ -141,7 +141,15 @@ overwrite_layer() {
     for f in "$dest/$sub"/*.md "$dest/$sub"/*.sh "$dest/$sub"/*.json "$dest/$sub"/*.py "$dest/$sub"/*.html; do
       [ -f "$f" ] || continue
       local base; base="$(basename "$f")"
-      [ -f "$src/$sub/$base" ] || { rm -f "$f"; log "platform: pruned stale $sub/$base"; }
+      [ -f "$src/$sub/$base" ] || [ -d "$src/$sub/${base%.md}" ] || { rm -f "$f"; log "platform: pruned stale $sub/$base"; }
+    done
+    # For skills (or any folder containing subfolders like <skill-name>/SKILL.md), copy subfolders recursively
+    for dir in "$src/$sub"/*/; do
+      [ -d "$dir" ] || continue
+      local dirname; dirname="$(basename "$dir")"
+      mkdir -p "$dest/$sub/$dirname"
+      cp -r "$dir"* "$dest/$sub/$dirname/" 2>/dev/null || cp "$dir"* "$dest/$sub/$dirname/" 2>/dev/null || true
+      log "platform → $sub/$dirname/"
     done
     for f in "$src/$sub"/*.md "$src/$sub"/*.sh "$src/$sub"/*.json "$src/$sub"/*.py "$src/$sub"/*.html; do
       [ -f "$f" ] || continue
@@ -597,6 +605,15 @@ sync_project() {
     cp "$f" "$dest/skills/platform/$(basename "$f")"
     sn=$((sn + 1))
   done
+  for dir in "$SRC_DIR/platform/skills"/*/; do
+    [ -d "$dir" ] || continue
+    local sname; sname="$(basename "$dir")"
+    [ -f "$dir/SKILL.md" ] || continue
+    mkdir -p "$dest/skills/platform/$sname"
+    cp "$dir/SKILL.md" "$dest/skills/platform/$sname/SKILL.md"
+    cp "$dir/SKILL.md" "$dest/skills/platform/${sname}.md" 2>/dev/null || true
+    sn=$((sn + 1))
+  done
   log "$cn platform command(s) synced → $dest/commands/"
   log "$sn platform skill(s) synced → $dest/skills/platform/"
 
@@ -743,7 +760,9 @@ doctor() {
     for f in "$d/skills/platform"/*.md; do
       [ -f "$f" ] || continue
       local base; base="$(basename "$f")"
-      local src="$SRC_DIR/platform/skills/$base"
+      local sname="${base%.md}"
+      local src="$SRC_DIR/platform/skills/$sname/SKILL.md"
+      [ -f "$src" ] || src="$SRC_DIR/platform/skills/$base"
       [ -f "$src" ] || continue
       checked=$((checked + 1))
       cmp -s "$f" "$src" || { warn "skills/platform/$base differs from platform source (stale)"; stale=$((stale + 1)); }

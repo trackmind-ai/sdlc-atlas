@@ -44,5 +44,6 @@
     "./platform/agents/test-agent.md",
     "./platform/agents/ux-research-agent.md"
   ],
-  "skills": "./platform/skills"
+  "skills": "./platform/skills",
+  "hooks": "./hooks/hooks.json"
 }
