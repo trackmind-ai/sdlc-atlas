@@ -63,6 +63,16 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 log()  { printf '  \033[32m✔\033[0m %s\n' "$1"; }
 warn() { printf '  \033[33m!\033[0m %s\n' "$1"; }
 die()  { printf '  \033[31m✘\033[0m %s\n' "$1" >&2; exit 1; }
+# proj_root: callers append /.claude (or /.cursor) themselves, so a path that already ends
+# in a layer dir would nest it (.claude/.claude). Use the parent instead.
+proj_root() {
+  local bs p; bs=$(printf '\134'); p="${1//"$bs"//}"; p="${p%/}"
+  case "$p" in
+    .claude|.cursor) p=".." ;;
+    */.claude|*/.cursor) warn "project path ends in a layer dir - using its parent" >&2; p="${p%/*}" ;;
+  esac
+  printf '%s' "$p"
+}
 
 # ---------------------------------------------------------------------------
 # Target resolution: which tool's native folder shape to build.
@@ -780,15 +790,15 @@ doctor() {
 
 case "${1:-}" in
   --platform)      install_platform ;;
-  --stack)         [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --stack <name> --project <path>"; install_stack "$2" "$4" ;;
-  --stacks)        [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --stacks <fastapi,react> --project <path>"; install_stacks "$2" "$4" ;;
-  --org)           [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --org <path> --project <path>"; install_org "$2" "$4" ;;
-  --new-project)   [ $# -ge 2 ] || die "usage: --new-project <path>"; new_project "$2" ;;
+  --stack)         [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --stack <name> --project <path>"; install_stack "$2" "$(proj_root "$4")" ;;
+  --stacks)        [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --stacks <fastapi,react> --project <path>"; install_stacks "$2" "$(proj_root "$4")" ;;
+  --org)           [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --org <path> --project <path>"; install_org "$2" "$(proj_root "$4")" ;;
+  --new-project)   [ $# -ge 2 ] || die "usage: --new-project <path>"; new_project "$(proj_root "$2")" ;;
   --init-layer)    shift; init_layer "$@" ;;
-  --project-layer) [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --project-layer <name> --project <path>"; install_project_layer "$2" "$4" ;;
+  --project-layer) [ $# -ge 4 ] && [ "$3" = "--project" ] || die "usage: --project-layer <name> --project <path>"; install_project_layer "$2" "$(proj_root "$4")" ;;
   --list-layers)   list_layers ;;
-  --doctor)        [ $# -ge 2 ] || die "usage: --doctor <path>"; doctor "$2" ;;
-  --sync-project)  [ $# -ge 2 ] || die "usage: --sync-project <path>"; sync_project "$2" ;;
+  --doctor)        [ $# -ge 2 ] || die "usage: --doctor <path>"; doctor "$(proj_root "$2")" ;;
+  --sync-project)  [ $# -ge 2 ] || die "usage: --sync-project <path>"; sync_project "$(proj_root "$2")" ;;
   --audit-stacks)  audit_stacks ;;
   *)               sed -n '2,12p' "$0"; exit 1 ;;
 esac

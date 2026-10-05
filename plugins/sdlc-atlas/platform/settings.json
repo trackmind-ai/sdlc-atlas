@@ -87,7 +87,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=$(sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | head -1); if [ -z \"$f\" ]; then echo \"BLOCKED: capability-file hook could not parse the tool payload, so it cannot verify this edit is allowed. Failing closed. Report at https://github.com/trackmind-ai/sdlc-atlas/issues\"; exit 2; fi; case \"$f\" in */.claude/agents/*|*/.claude/skills/*|*/.claude/commands/*) if [ ! -f \"$f\" ]; then exit 0; fi; echo \"BLOCKED: capability files already exist - change only via /approve-proposal (sdlc-atlas governance).\"; exit 2;; esac; exit 0"
+            "command": "f=$(sed -n 's/.*\"file_path\"[[:space:]]*:[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' | head -1 | tr '\\\\' '/' | tr -s '/'); if [ -z \"$f\" ]; then echo \"BLOCKED: capability-file hook could not parse the tool payload, so it cannot verify this edit is allowed. Failing closed. Report at https://github.com/trackmind-ai/sdlc-atlas/issues\"; exit 2; fi; case \"$f\" in */.claude/agents/*|*/.claude/skills/*|*/.claude/commands/*) if [ ! -f \"$f\" ]; then exit 0; fi; echo \"BLOCKED: capability files already exist - change only via /approve-proposal (sdlc-atlas governance).\"; exit 2;; esac; exit 0"
           }
         ]
       }

@@ -76,6 +76,13 @@ echo "$HOME/.claude"
 
 - **PROJECT_ROOT** = first output (overridden by developer's Q1 answer)
 - **PLATFORM_HOME** = second output
+- **PROJECT_ROOT is never a layer dir.** If PROJECT_ROOT (here, or from the Q1/B0
+  answer later) ends in `/.claude` or `/.cursor` (either slash style, trailing
+  slash ignored), drop that last segment: the parent is the project. Once
+  PROJECT_ROOT is final, run `cd "PROJECT_ROOT"` so the session cwd is the
+  project root. Claude Code creates `memory: project` agent memory at
+  `<cwd>/.claude/agent-memory/`, so a cwd inside `.claude/` leaves a stray
+  `.claude/.claude/`.
 
 **Determine TARGET (no question asked — this is a fact about the running
 session, not something to ask the developer or infer from disk):**
@@ -243,7 +250,7 @@ Full path (e.g. C:\Users\you\projects\my-app  or  /home/you/projects/my-app):
 On reply:
 
 - Must be absolute path. Must NOT contain "sdlc-atlas" or "AgenticAI-SDLC" (the platform checkout, not a project). If invalid → re-ask Q1.
-- Set PROJECT_ROOT = validated path.
+- Set PROJECT_ROOT = validated path (apply the layer-dir rule from Step 0b, then `cd "PROJECT_ROOT"`).
 - Run all mkdir in parallel (fire simultaneously, do not wait). Structure
   depends on `TARGET` from Step 0b:
 
@@ -567,7 +574,7 @@ Wait for path. Validate:
 - Must be absolute — if relative, reject and re-ask
 - Must NOT contain "sdlc-atlas" or "AgenticAI-SDLC" (the platform checkout) — if it does, print error and re-ask
 - Check it exists: `ls "PATH" 2>/dev/null && echo "EXISTS" || echo "MISSING"` — if MISSING, stop and tell the developer
-- Set PROJECT_ROOT = confirmed path
+- Set PROJECT_ROOT = confirmed path (apply the layer-dir rule from Step 0b, then `cd "PROJECT_ROOT"`)
 
 **After PROJECT_ROOT is confirmed: run B1 → B2 → B3 → B4 with NO further user interaction.**
 Do not ask for confirmation between steps. Do not ask about stacks. Run everything automatically.
