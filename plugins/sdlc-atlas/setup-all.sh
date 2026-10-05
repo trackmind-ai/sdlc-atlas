@@ -26,6 +26,12 @@ while [ $# -gt 0 ]; do case "$1" in
   *) echo "unknown arg $1"; exit 1;;
 esac; done
 [ -n "$PROJ" ] || { echo "required: --project <repo path>"; exit 1; }
+# a path already ending in a layer dir would nest it (.claude/.claude) - use the parent
+bs=$(printf '\134'); PROJ="${PROJ//"$bs"//}"; PROJ="${PROJ%/}"
+case "$PROJ" in
+  .claude|.cursor) PROJ=".." ;;
+  */.claude|*/.cursor) echo "    --project ends in a layer dir - using its parent"; PROJ="${PROJ%/*}" ;;
+esac
 
 echo "==> [1/6] Platform layer -> ~/.claude"
 echo "    Stack agents/skills installed as subfolders: agents/<name>/AGENT.md, skills/<name>/SKILL.md"
