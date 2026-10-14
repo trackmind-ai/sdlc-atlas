@@ -10,6 +10,13 @@ gates that run in a fixed order and stop at the first failure.
 The governance is the point. Agents here cannot write production code until a human has
 approved a spec — enforced by a hook, not by an instruction an agent might ignore.
 
+## Watch it run
+
+[![Watch the sdlc-atlas demo on YouTube](.github/assets/demo-thumbnail.png)](https://youtu.be/oRwy4BY-QHc)
+
+An empty folder to a working React app with tests — the interview, the approval gate, the
+quality gates, and the live browser check, end to end.
+
 ## Install
 
 Register Trackmind's marketplace once per machine, then install:
