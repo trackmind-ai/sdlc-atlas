@@ -1,5 +1,8 @@
 # Onboarding
 
+> New here? [Watch the six-minute walkthrough](https://youtu.be/oRwy4BY-QHc) before you start —
+> it covers install, `/start`, the approval gate, and the quality gates.
+
 ## Developer path (recommended — no shell flags to memorize)
 
 1. **Once per machine:** install platform layer (or use `setup.ps1` once).

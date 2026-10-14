@@ -5,6 +5,9 @@ ADO story **#2104: "Patients can download their lab results as a PDF and get
 notified when it's ready."** Each step is tagged with the layer doing the work.
 Use this to onboard developers and as the live-demo script.
 
+> Prefer to watch? [Six-minute video walkthrough](https://youtu.be/oRwy4BY-QHc) — a greenfield
+> build from an empty folder, with the approval and quality gates in place.
+
 ## 1 · Intake — `/feature #2104`
 The orchestrator's startup ritual IS the four layers loading, in order:
 ```
