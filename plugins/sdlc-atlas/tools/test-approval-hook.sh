@@ -4,7 +4,7 @@
 # Behaviour test for the plugin's PreToolUse edit-gate hooks (hooks/hooks.json).
 # Run from the plugin root: bash tools/test-approval-hook.sh
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || exit 1
 PY=$(command -v python3 || command -v python) || { echo "no python"; exit 1; }
 fails=0
 hook() { "$PY" -c "import json,sys;print(json.load(open('hooks/hooks.json'))['hooks']['PreToolUse'][0]['hooks'][$1]['command'])"; }
