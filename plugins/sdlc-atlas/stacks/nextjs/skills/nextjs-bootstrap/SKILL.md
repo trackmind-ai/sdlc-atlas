@@ -4,7 +4,7 @@ description: Greenfield scaffold procedure for a new Next.js 14+ App Router proj
 ---
 # Next.js Bootstrap Procedure
 
-1. Scaffold frontend: `npx create-next-app@latest frontend --typescript --tailwind --eslint --app --src-dir=no --import-alias "@/*"`.
+1. Scaffold frontend: `npx create-next-app@16.4.2 frontend --typescript --tailwind --eslint --app --src-dir=no --import-alias "@/*"`.
 2. Scaffold backend: `mkdir backend && cd backend && npm init -y && npm install express zod cors dotenv && npm install -D typescript @types/express @types/node ts-node-dev`.
 3. Pin exact versions in both `package.json` files; commit lock files.
 4. Frontend layout: `app/layout.tsx`, `app/page.tsx`, `app/globals.css`, `components/`, `lib/`.

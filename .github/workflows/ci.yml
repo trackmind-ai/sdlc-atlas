@@ -48,6 +48,14 @@ jobs:
           python -m pip install pyyaml
           python scripts/validate_agents.py
 
+      # Behaviour test for the edit-gate hooks: silent in a plain project, enforcing in a
+      # set-up one. Also runs the package self-test (`make test`).
+      - name: Hook behaviour and package self-test
+        run: |
+          cd plugins/sdlc-atlas
+          bash tools/test-approval-hook.sh
+          bash tools/verify-package.sh
+
   lint:
     name: Lint scripts and links
     runs-on: ubuntu-latest

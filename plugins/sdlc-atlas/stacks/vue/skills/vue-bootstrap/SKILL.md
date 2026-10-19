@@ -4,7 +4,7 @@ description: Greenfield scaffold procedure for a new Vue 3 + TypeScript + Vite p
 ---
 # Vue Bootstrap Procedure
 
-1. Scaffold: `npm create vite@latest frontend -- --template vue-ts`.
+1. Scaffold: `npm create vite@9.2.1 frontend -- --template vue-ts`.
 2. Install core deps: `npm install vue-router pinia axios`.
 3. Install dev deps: `npm install -D vitest @vue/test-utils @pinia/testing jsdom eslint prettier vue-tsc`.
 4. Pin exact versions; commit `package-lock.json`.

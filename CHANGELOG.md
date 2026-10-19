@@ -8,6 +8,22 @@ may contain breaking changes; they will always be called out under **Changed**.
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-10-16
+
+Directory-submission readiness.
+
+### Added
+- `plugins/sdlc-atlas/README.md` with a full disclosure of hooks, permission settings, installs and network access.
+- `tools/test-approval-hook.sh`, a behaviour test for the edit-gate hooks, run in CI.
+
+### Changed
+- The plugin-level edit-gate hooks no longer block edits in projects that have not been set up with `/start`. They now switch on once a project has `.claude/memory/orchestrator_state.md` or the governance settings in `.claude/settings.json`. Previously an installed plugin blocked every code edit in every project.
+- The orchestrator, setup agent and QA agent ask before installing caveman, Chrome DevTools MCP or Maestro MCP instead of installing silently.
+- Pinned `chrome-devtools-mcp` (1.11.0), `create-next-app` (16.4.2), `create vite` (9.2.1) and the caveman installer (fixed commit) instead of `@latest` / `main`.
+
+### Fixed
+- `tools/verify-package.sh` (and so `make test`) failed 15 checks because it looked for the old flat `skills/<name>.md` layout.
+
 ## [0.1.0] — 2026-08-13
 
 First public release, published under `trackmind-ai` as a Claude Code plugin.

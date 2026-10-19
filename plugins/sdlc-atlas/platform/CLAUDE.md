@@ -5,7 +5,7 @@ project CLAUDE.md → knowledge.md. Precedence on filename collision:
 **project > org > stack > platform**. Lower layers may only tighten.
 
 HARD RULES — ⚙ = also mechanically enforced (hook/script), not just stated: 0. **Terse output — enforced via the external caveman CLI plugin.**
-Orchestrator and setup-agent auto-install the caveman plugin (Step -1, inline, not a platform skill) at session start — it enforces terse output (no articles/hedging/pleasantries) at the tool level. Cache-first reads (`cache-first-reads`), parallel writes (`parallel-writes`), and background-task notices (`background-task-notify`) remain separate opt-in platform skills — an agent loads whichever apply to its tools, not all by default.
+Orchestrator and setup-agent offer to install the caveman plugin (Step -1, inline, not a platform skill, installs only after the developer says yes) at session start — it enforces terse output (no articles/hedging/pleasantries) at the tool level. Cache-first reads (`cache-first-reads`), parallel writes (`parallel-writes`), and background-task notices (`background-task-notify`) remain separate opt-in platform skills — an agent loads whichever apply to its tools, not all by default.
 
 1. ⚙ No production-code edits without an approval marker
    (`.claude/memory/approvals/ACTIVE`). The hook blocks them.

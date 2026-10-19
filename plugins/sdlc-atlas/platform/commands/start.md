@@ -47,11 +47,11 @@ uname -s 2>/dev/null || echo "Windows"
 
 - If output contains `Windows`, `MINGW`, or `CYGWIN` → run PowerShell:
   ```powershell
-  irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex
+  irm https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.ps1 | iex
   ```
 - Otherwise (macOS / Linux / WSL) → run:
   ```bash
-  curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.sh | bash
   ```
 
 After installer completes, re-check:
@@ -169,7 +169,7 @@ tooling manually instead.
    - **yes** → install each missing tool, same commands qa-agent Step -1 uses:
      ```bash
      # Chrome DevTools MCP (web) — only if missing
-     claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest
+     claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@1.11.0
      ```
      ```bash
      # Maestro MCP (mobile) — only if missing; installs the Maestro CLI first if absent
