@@ -45,10 +45,18 @@ Load skill: `verification-evidence`. Before running tests, check: has code chang
    TOOL=$(echo "$CMD" | awk '{print $1}')
    command -v "$TOOL" > /dev/null 2>&1 || {
      echo "⚠ Test runner '$TOOL' not found on PATH."
-     echo "Install it first (e.g. npm install / pip install -r requirements.txt), then re-run."
-     exit 1
+     echo "ASK_DEVELOPER: install it now (e.g. npm install / pip install -r requirements.txt), or continue without it?"
    }
    ```
+
+   **Missing tool — ask, never block.** A declared tool that is not installed is the
+   developer's call, not a failure. Ask once (AskUserQuestion): `'<tool>' is not
+   installed. Install it now? (yes / no)`, showing the install command.
+   - **yes** → run the install, re-check `command -v`, and continue with the real run.
+   - **no** → append `<tool>` as one line to `.claude/memory/declined_tools.md` (create it
+     if absent), do not install it, and continue. `run-gates.sh` then records the gate as
+     `SKIPPED (declined)`. Report `tests skipped (declined) — nothing was tested` in your output and in the completion summary.
+   Never stop the pipeline only because the developer declined a tool.
 
    If either check fails, STOP here with the actionable message above — do not attempt to run the suite and report a raw "command not found" as if it were a test failure.
 

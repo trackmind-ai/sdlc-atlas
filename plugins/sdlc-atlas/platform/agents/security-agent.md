@@ -39,11 +39,20 @@ color: red
    TOOL=$(echo "$CMD" | awk '{print $1}')
    command -v "$TOOL" > /dev/null 2>&1 || {
      echo "⚠ Security scanner '$TOOL' declared in CLAUDE.md but not installed/on PATH."
-     echo "Install it first (e.g. pip install bandit, npm install -g gitleaks), then re-run."
+     echo "Ask the developer whether to install it (e.g. pip install bandit, npm install -g gitleaks) or continue without it."
      echo "Falling back to manual diff review for this run — do not report this as a scan PASS."
      # fall through to manual diff review below rather than crashing
    }
    ```
+
+   **Missing tool — ask, never block.** A declared tool that is not installed is the
+   developer's call, not a failure. Ask once (AskUserQuestion): `'<tool>' is not
+   installed. Install it now? (yes / no)`, showing the install command.
+   - **yes** → run the install, re-check `command -v`, and continue with the real run.
+   - **no** → append `<tool>` as one line to `.claude/memory/declined_tools.md` (create it
+     if absent), do not install it, and continue. `run-gates.sh` then records the gate as
+     `SKIPPED (declined)`. For this agent, fall back to the manual diff review below and label the result `scan skipped (declined) — manual review only`; never report it as a scan PASS.
+   Never stop the pipeline only because the developer declined a tool.
 
    A declared-but-uninstalled tool is not the same as "missing tool" (undeclared) — it still
    falls back to manual diff review, but the report must say "scanner not installed" explicitly,

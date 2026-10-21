@@ -22,13 +22,15 @@ cd "PROJECT_ROOT" && bash "$GATES_SCRIPT"
 THE GATE ORDER LIVES IN THAT SCRIPT — code, not prose: onboarding → test → security → lint → build → browser QA,
 fail-stops with exit 2, results written to `PROJECT_ROOT/.claude/memory/gate_results.md`.
 
-## Step 2b — Browser QA gate (frontend stacks — MANDATORY, not optional)
+## Step 2b — Browser QA gate (frontend stacks)
 
 Read `gate_results.md`. If row `| 4 | qa (browser) |` is **PENDING** (or stale):
 dispatch `qa-agent` NOW (full mode) against the running dev server — start the
-server first if needed. When qa-agent returns, flip row 4 to PASS or **FAIL**
-based on the `verdict:` line in `.claude/memory/qa_report.md`. FAIL → stop here,
-report findings; do not proceed to Step 3.
+server first if needed. When qa-agent returns, flip row 4 to PASS, **FAIL** or
+`SKIPPED (declined)` based on the `verdict:` line in `.claude/memory/qa_report.md`.
+FAIL → stop here, report findings; do not proceed to Step 3. `SKIPPED (declined)`
+is the developer's explicit choice to run without live QA: continue, and say in the
+summary that the UI was not verified.
 
 Row 4 SKIPPED (no frontend stack) → proceed directly to Step 3.
 

@@ -113,7 +113,7 @@ _cursor_rewrite_start_for_cursor() {
       mode="skip_qa"
       print "## Step 0c — QA tooling check"
       print ""
-      print "This platform requires live browser/mobile QA tooling before building a"
+      print "Live browser/mobile QA needs tooling before building a"
       print "frontend (qa-agent'\''s E2E Journey + per-screen audit, Phase 5a). Under"
       print "Cursor, QA tooling is configured via `.cursor/mcp.json` directly (see"
       print "Cursor'\''s MCP docs), not via the `claude mcp` CLI subcommand this check"

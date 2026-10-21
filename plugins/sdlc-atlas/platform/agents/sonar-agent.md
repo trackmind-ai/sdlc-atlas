@@ -44,12 +44,21 @@ color: cyan
    esac
    TOOL=$(echo "$CMD" | awk '{print $1}')
    command -v "$TOOL" > /dev/null 2>&1 || {
-     echo "⚠ Linter '$TOOL' not found on PATH. Install it first, then re-run."
-     exit 1
+     echo "⚠ Linter '$TOOL' not found on PATH."
+     echo "ASK_DEVELOPER: install it now, or continue without it?"
    }
    ```
 
-   Note Sonar unconfigured/unreachable in the output (don't fail for that in small/standard profiles) — but a missing linter binary IS a fail, since there is no further fallback after that.
+   **Missing tool — ask, never block.** A declared tool that is not installed is the
+   developer's call, not a failure. Ask once (AskUserQuestion): `'<tool>' is not
+   installed. Install it now? (yes / no)`, showing the install command.
+   - **yes** → run the install, re-check `command -v`, and continue with the real run.
+   - **no** → append `<tool>` as one line to `.claude/memory/declined_tools.md` (create it
+     if absent), do not install it, and continue. `run-gates.sh` then records the gate as
+     `SKIPPED (declined)`. Report `lint skipped (declined) — no lint ran` in your output.
+   Never stop the pipeline only because the developer declined a tool.
+
+   Note Sonar unconfigured/unreachable in the output (don't fail for that in small/standard profiles) — but a missing linter binary that the developer has not declined is a fail until they answer the install question above.
 
 2. **Maintainability specialist pass**: In addition to linter/sonar, audit diff for Maintainability issues (gstack-inspired):
    - Cyclomatic complexity hotspots (deep nesting, long switch/if chains)

@@ -4,16 +4,17 @@ Read order before any pipeline work: this file → org policy (if declared) →
 project CLAUDE.md → knowledge.md. Precedence on filename collision:
 **project > org > stack > platform**. Lower layers may only tighten.
 
-HARD RULES — ⚙ = also mechanically enforced (hook/script), not just stated: 0. **Terse output — enforced via the external caveman CLI plugin.**
-Orchestrator and setup-agent offer to install the caveman plugin (Step -1, inline, not a platform skill, installs only after the developer says yes) at session start — it enforces terse output (no articles/hedging/pleasantries) at the tool level. Cache-first reads (`cache-first-reads`), parallel writes (`parallel-writes`), and background-task notices (`background-task-notify`) remain separate opt-in platform skills — an agent loads whichever apply to its tools, not all by default.
+HARD RULES — ⚙ = also mechanically enforced (hook/script), not just stated: 0. **Terse output — enforced via the optional external caveman CLI plugin.**
+Orchestrator, setup-agent, `/start` and `/setup` offer to install the caveman plugin (inline, not a platform skill, installs only after the developer says yes; declining continues without it) — it enforces terse output (no articles/hedging/pleasantries) at the tool level. Cache-first reads (`cache-first-reads`), parallel writes (`parallel-writes`), and background-task notices (`background-task-notify`) remain separate opt-in platform skills — an agent loads whichever apply to its tools, not all by default.
 
 1. ⚙ No production-code edits without an approval marker
    (`.claude/memory/approvals/ACTIVE`). The hook blocks them.
 2. Approval = `/approve-spec` (or `/fix` approval, or `/bootstrap` go-ahead),
    each of which writes the marker. A conversational "yes" is not approval.
 3. ⚙ Quality gates run via the gate-runner script (`scripts/run-gates.sh`) in
-   fixed order; first failure stops. Browser QA (qa-agent, gate 4 — mandatory
-   for frontend stacks) and the LLM review gate (5) follow the script and flip
+   fixed order; first failure stops. Browser QA (qa-agent, gate 4 — runs for
+   frontend stacks; `SKIPPED (declined)` only if the developer declined the QA
+   tooling) and the LLM review gate (5) follow the script and flip
    their PENDING rows in `gate_results.md`. Gates are complete ONLY when
    `gate_results.md` has no PENDING/FAIL rows — nothing may be reported
    COMPLETED before that.

@@ -5,24 +5,35 @@ description: "One-time project onboarding. Asks where the project lives, intervi
 
 # /setup
 
-## Step 0 — Caveman plugin check (run first)
+## Step 0 — Caveman plugin check (optional — ask, never block)
+
+Caveman is an optional third-party plugin that enforces terse output. `/setup` works
+without it.
 
 ```bash
 cat "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.caveman-active" 2>/dev/null || echo "NOT_INSTALLED"
 ```
 
-If `NOT_INSTALLED` or empty → stop and print:
+If active → continue to Step 1.
+
+If `NOT_INSTALLED` or empty → ask the developer (AskUserQuestion), printing:
 ```
 [Setup] Caveman plugin not detected.
-
-Install it first:
-  Windows:  irm https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.ps1 | iex
-  Mac/Linux: curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.sh | bash
-
-Restart Claude Code, then re-run /setup.
+It is an optional third-party plugin that cuts token usage by enforcing terse output.
+Install it now? (yes / no)
 ```
+- **no** → print `Continuing without caveman — terse-output enforcement is off. You can
+  install it later.` and continue to Step 1. Do not ask again this session.
+- **yes** → run the installer for the developer's OS (pinned to a fixed commit):
+  ```
+  Windows:   irm https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.ps1 | iex
+  Mac/Linux: curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.sh | bash
+  ```
+  Then re-check. If it is active, continue. If it is not (some installs only take effect
+  after a restart), print `Caveman did not activate. Continuing without it — restart
+  Claude Code later to enable it.` and continue to Step 1.
 
-Do not proceed until caveman check passes.
+Never stop `/setup` because of caveman.
 
 ## Step 1 — Confirm project directory
 
