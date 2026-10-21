@@ -41,7 +41,7 @@ allow: [
   "Bash(git branch*)", "Bash(git checkout -b*)",
   "Bash(mkdir*)", "Bash(cp *)",
   "<test_cmd prefix>*", "<lint_cmd prefix>*",
-  "Bash(npm test*)", "Bash(npm run*)", "Bash(pytest*)", "Bash(ruff*)", "Bash(ng *)", "Bash(npx *)"
+  "Bash(npm test*)", "Bash(npm run*)", "Bash(pytest*)", "Bash(ruff*)", "Bash(ng *)", "Bash(npx eslint*)", "Bash(npx tsc*)", "Bash(npx prettier*)", "Bash(npx vitest*)", "Bash(npx jest*)"
 ]
 ```
 

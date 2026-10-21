@@ -5,7 +5,7 @@ intake -> requirements -> spec -> develop -> test
 ## Gates
 - Spec approval (still mandatory — the one non-negotiable)
 - test-agent must pass (if test command configured)
-- Live Browser/Mobile QA E2E verification (mandatory if frontend/mobile stack present)
+- Live Browser/Mobile QA E2E verification (if frontend/mobile stack present; skipped only if the developer declined the QA tooling)
 ## Disabled
 Issue-tracker integration, security-agent (downgraded to warn-only), sonar-agent,
 review-agent, release/incident/retro phases, ADRs, traceability reports.

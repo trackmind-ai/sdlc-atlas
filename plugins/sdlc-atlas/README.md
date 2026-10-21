@@ -47,23 +47,33 @@ governance settings in its `.claude/settings.json`. In a set-up project:
 The hooks read the tool call and local files only. They make no network requests.
 
 **Permission settings.** The plugin ships `platform/settings.json`, which `/start` copies
-into a governed project's `.claude/settings.json`. It adds a project-level allow list (66 rules, for example `npx`,
-`pip install`, `claude mcp add` and common git and test commands) and a deny list (force
-push, `rm -rf /` and `rm -rf ~`, editing `.env` files and secrets, editing approved
-proposals). The plugin does not edit your user-level Claude settings.
+into a governed project's `.claude/settings.json`. It adds a project-level allow list (80 rules)
+and a deny list (force push, `rm -rf /` and `rm -rf ~`, editing `.env` files and secrets,
+editing approved proposals). The allow list names specific commands rather than wildcards:
+`npx` is limited to eslint, tsc, vue-tsc, prettier, vitest, jest, vite, next, prisma, typeorm and
+license-checker, `claude mcp add` to the two QA servers below, and `pip install` to
+`-r requirements` files and bandit. Anything else (for example `npx some-other-package`)
+prompts you as usual. The plugin does not edit your user-level Claude settings.
 
-**Software it can install, only after asking you:**
+**Software it can install, only after asking you.** Every item below is optional: you are
+asked, and if you say no, nothing is installed and setup continues. Nothing in `/start`,
+`/setup` or the agents stops because you declined.
 
 - Chrome DevTools MCP (`claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@1.11.0`)
   for browser QA of web frontends, and Maestro (`claude mcp add maestro -- maestro mcp`,
   with the official installer from `get.maestro.mobile.dev` if the CLI is absent) for mobile.
-  Browser and device QA are mandatory for frontend stacks.
+  The browser and device QA gate runs for frontend stacks. If you decline the tooling, the
+  gate is recorded as `SKIPPED (declined)` and the final report states that the UI was not
+  verified. It is never recorded as a pass, and a static source review is never presented
+  as QA.
 - The third-party `caveman` terse-output plugin, via its install script pinned to a fixed
-  commit of `github.com/JuliusBrussee/caveman`. Declining skips terse-output enforcement in
-  the orchestrator and setup agent. `/start` and `/setup` currently still require it.
+  commit of `github.com/JuliusBrussee/caveman`. Declining skips terse-output enforcement;
+  `/start`, `/setup` and the agents all continue without it.
 - Project scaffolders pinned to exact versions: `create-next-app@16.4.2` and `create vite@9.2.1`.
 - Tools a stack needs, such as `pip install -r requirements.txt` and `npm install`, in your
-  project.
+  project. If a declared test, lint or security tool is missing, you are asked whether to
+  install it. If you decline, the tool is listed in `.claude/memory/declined_tools.md` and
+  its gate is recorded as `SKIPPED (declined)`.
 
 **Network access.**
 

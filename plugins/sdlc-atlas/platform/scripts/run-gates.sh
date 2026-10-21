@@ -53,6 +53,13 @@ run_gate(){ # $1=num $2=name $3=cmd  -- writes its own row line to $4 (a per-gat
   # is a setup problem, not a test/scan failure, and should be reported as such.
   local tool; tool="$(echo "$cmd" | awk '{print $1}')"
   if ! command -v "$tool" > /dev/null 2>&1; then
+    # The developer may have chosen to run without this tool (one name per line in
+    # .claude/memory/declined_tools.md). That is their call, not a failure.
+    if [ -f ".claude/memory/declined_tools.md" ] && grep -qxF "$tool" ".claude/memory/declined_tools.md"; then
+      echo "| $n | $name | tool not installed: $tool (declined by developer) | SKIPPED (declined) |" > "$rowfile"
+      echo "${log_prefix}GATE $n $name: SKIPPED (declined) — '$tool' not installed; the developer chose to continue without it."
+      return 0
+    fi
     echo "| $n | $name | tool not installed: $tool | **FAIL** |" > "$rowfile"
     echo "${log_prefix}GATE $n $name: FAIL — '$tool' not found on PATH. Install it, then re-run this script."
     return 2
@@ -129,7 +136,11 @@ FRONTEND=0
 grep -Eiq '^(stacks?|frontend):.*\b(react|nextjs|next\.js|angular|vue|svelte|react-native|flutter)\b' "$CFG" && FRONTEND=1
 QA_REPORT=".claude/memory/qa_report.md"
 if [ "$FRONTEND" -eq 1 ]; then
-  if [ -f "$QA_REPORT" ] && grep -Eiq '^(verdict|## verdict).*(PASS)' "$QA_REPORT"; then
+  if [ -f "$QA_REPORT" ] && grep -Eiq '^verdict:[[:space:]]*SKIPPED' "$QA_REPORT" && grep -Eiq '^declined_by:[[:space:]]*developer' "$QA_REPORT"; then
+    # The developer explicitly declined the QA tooling. Honest label, not a pass.
+    echo "| 4 | qa (browser) | qa tooling declined by developer — UI NOT verified | SKIPPED (declined) |" >> "$OUT"
+    echo "GATE 4 qa: SKIPPED (declined) — the developer chose to continue without live QA; the UI was NOT verified."
+  elif [ -f "$QA_REPORT" ] && grep -Eiq '^(verdict|## verdict).*(PASS)' "$QA_REPORT"; then
     # Freshness: QA evidence older than the newest source file is stale.
     NEWEST_SRC="$(find src app frontend -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' -o -name '*.css' -o -name '*.html' \) -newer "$QA_REPORT" 2>/dev/null | head -1)"
     if [ -n "$NEWEST_SRC" ]; then
@@ -158,5 +169,9 @@ if grep -q 'PENDING' "$OUT"; then
   echo "flip it to PASS/FAIL in $OUT before declaring the feature or forge complete."
 else
   echo "GATES COMPLETE: all rows resolved."
+fi
+if grep -q 'SKIPPED (declined)' "$OUT"; then
+  echo "NOTE: one or more gates were skipped at the developer's request (see rows marked"
+  echo "SKIPPED (declined) in $OUT). Say so in the summary — those checks did NOT run."
 fi
 echo "Results written to: $OUT"

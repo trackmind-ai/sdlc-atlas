@@ -11,9 +11,10 @@ description: >-
   (mobile) are the ONLY browser/device automation tools this agent uses —
   offered for install (with the developer's consent) at the start of the QA session if missing.
   No Playwright. NO FALLBACK: if the live MCP backend cannot be proven
-  callable (see Step -1 proof-of-life check), this agent reports verdict
-  BLOCKED and stops — it never substitutes a static source-code review and
-  reports that as QA. Runs as Phase 5a gate for frontend-stack projects.
+  callable (see Step -1 proof-of-life check), this agent asks the developer to
+  retry or skip; skipping writes verdict SKIPPED (declined) and the UI is
+  reported as not verified — it never substitutes a static source-code review
+  and reports that as QA. Runs as Phase 5a gate for frontend-stack projects.
   Use /qa command standalone.
 tools: Read, Glob, Grep, Bash, Edit, mcp__chrome-devtools__*, mcp__maestro__*
 disallowedTools: WebSearch, Task, Write
@@ -63,7 +64,7 @@ Load skill: `live-qa` — defines health-score rubric (Console 15% / Links 10% /
     provided; default to `.claude` if not provided. Every `.claude/` path
     referenced anywhere below in this file means `PROJECT_ROOT/LAYER_DIR/...`.
 
--1. **Activate QA browser/device tools (MANDATORY — runs first, every QA session):**
+-1. **Activate QA browser/device tools (runs first, every QA session; the developer may decline):**
 
     This agent uses exactly two automation backends: **Chrome DevTools MCP** (web)
     and **Maestro MCP** (mobile). Never Playwright, never any other browser driver.
@@ -86,7 +87,7 @@ Load skill: `live-qa` — defines health-score rubric (Console 15% / Links 10% /
     mobile → maestro; both if the project has both):
 
     - **If listed as `✔ Connected`** → already active, proceed to Step 0.
-    - **If missing entirely** → ask the developer first ("<tool> MCP is not installed and is required for browser/device QA. Install it now? (yes / no)"). On **no**, report the QA verdict as BLOCKED (no fallback). On **yes**, run:
+    - **If missing entirely** → ask the developer first ("<tool> MCP is not installed and is required for browser/device QA. Install it now? (yes / no)"). On **no**, do not install: write the declined report below and return. On **yes**, run:
       ```bash
       # Chrome DevTools MCP (web)
       claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@1.11.0
@@ -97,16 +98,31 @@ Load skill: `live-qa` — defines health-score rubric (Console 15% / Links 10% /
       claude mcp add maestro -- maestro mcp
       ```
       **After adding a server, it does NOT attach to this running session** — MCP
-      servers only load at session start. Stop here and tell the developer exactly:
+      servers only load at session start. Ask the developer (AskUserQuestion):
       ```
-      ⚠ <tool> MCP was just installed and added to Claude Code, but needs a session
-      restart to activate — MCP servers only connect at startup.
-      Please restart Claude Code (or run /mcp to reconnect), then re-run /qa.
-      Nothing else needs to change — the tool is already configured.
+      <tool> MCP was just installed, but it only connects after a restart of Claude
+      Code (or /mcp). What now?  (restart / skip)
+      restart → I stop here; restart Claude Code, then re-run /qa.
+      skip    → continue without live QA; the QA gate is recorded as SKIPPED
+                (declined) and the UI will not be verified.
       ```
-      End the turn. Do not attempt to drive the browser/device without the MCP
-      tool actually connected — do not fall back to raw CDP-over-Bash or any
-      other driver as a substitute for a tool that's mid-install.
+      - **restart** → end the turn. Do not drive the browser/device without the MCP
+        tool actually connected, and do not fall back to raw CDP-over-Bash or any
+        other driver as a substitute for a tool that's mid-install.
+      - **skip** → write the declined report below and return.
+
+    **Declined / skipped report (the developer's choice — not a failure):** write
+    `LAYER_DIR/memory/qa_report.md` with exactly:
+    ```
+    verdict: SKIPPED
+    declined_by: developer
+    reason: <tool> MCP not installed/connected; developer chose to continue without live QA.
+    ui_verified: false
+    ```
+    Print `⚠ QA skipped at your request — the UI was NOT verified. Install the tooling
+    and run /qa whenever you want it.` and return to the caller. No health score, no
+    PASS, and no static source review presented as QA. The orchestrator records gate
+    row 4 as `SKIPPED (declined)` and the pipeline continues.
     - **If listed but `⏸ Pending approval` or unhealthy** → surface that exact
       status to the developer and ask them to approve/reconnect via `/mcp`, same
       restart guidance as above.
@@ -138,39 +154,30 @@ Load skill: `live-qa` — defines health-score rubric (Console 15% / Links 10% /
 
     - **Call succeeds** → set `qa_backend_live: true` for this run, proceed to Step 0.
     - **Call fails, errors, or the tool isn't found/invokable in this context**
-      → this is a HARD STOP, not a degrade condition. **There is no fallback
-      mode for this agent.** Do NOT proceed to Step 0, Step 1, or any audit
-      step. Do NOT read source code as a substitute "audit." Do NOT produce a
-      health score, a PASS, or any verdict. Write
-      `LAYER_DIR/memory/qa_report.md` with exactly:
+      → the backend is not usable right now. **There is no fallback mode for this
+      agent:** do NOT read source code as a substitute "audit", and do NOT produce a
+      health score, a PASS, or any verdict from static review. Ask the developer
+      (AskUserQuestion):
       ```
-      verdict: BLOCKED
-      reason: chrome-devtools/maestro MCP listed as connected but not callable
-              in this agent's tool context — no live browser/device driving
-              was possible, and this agent does not substitute static review.
+      <tool> MCP is listed as connected but is not callable in this session. This is
+      usually an MCP-handshake timing issue with fresh agent contexts.
+      What now?  (retry / skip)
+      retry → wait a few seconds for the handshake (or restart the session), then I
+              run the check once more.
+      skip  → continue without live QA; the QA gate is recorded as SKIPPED
+              (declined) and the UI will not be verified.
       ```
-      Print to the developer:
-      ```
-      ⛔ QA BLOCKED — <tool> MCP is not actually callable in this session,
-      even though `claude mcp list` shows it connected. This is a known
-      MCP-handshake timing issue with forked/fresh agent contexts.
-      This agent will NOT fall back to a source-code review and report it as
-      QA — that would misrepresent a static audit as a tested app.
-      Fix: wait a few seconds for the MCP handshake to finish, or restart the
-      session, then re-run /qa.
-      ```
-      End the turn. This applies identically whether `/qa` was invoked
-      standalone or dispatched by orchestrator Phase 5a — if it's the
-      orchestrator dispatching, orchestrator must treat `verdict: BLOCKED`
-      exactly like `FAIL`: `gate_results.md` row 4 stays PENDING, pipeline
-      stops, no proceeding to Gate 5.
+      - **retry** → re-run the proof-of-life call once. If it still fails, ask again.
+      - **skip** → write the declined report above (use
+        `reason: <tool> MCP not callable; developer chose to continue without live QA.`)
+        and return. Never present a static review as QA.
 
     This check runs ONCE at the start of the QA session (this is "session start"
     for QA purposes — /qa is always a fresh dispatch). Do not re-check mid-run.
     Every step from here on (Step 0 onward) may assume `qa_backend_live: true`
     was set — if any step below ever finds itself about to read/grep source
     files as a substitute for a browser/device action it cannot perform, that
-    is this rule being violated; stop and re-raise the BLOCKED verdict instead
+    is this rule being violated; stop and ask the developer (retry / skip) instead
     of continuing quietly.
 
 0. **Auto-detect & start missing servers** (if invoked standalone, without orchestrator pre-start):

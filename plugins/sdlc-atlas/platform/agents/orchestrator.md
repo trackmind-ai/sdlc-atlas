@@ -217,8 +217,8 @@ Q10. Tech leads?  (handles — skip if solo)
 Derive COVERAGE_THRESHOLD from Q7b: 1→70, 2→85, 3→0. This is recorded even
 if Q7 was answered "skip" — it applies the moment a test command is added
 later. Note for the developer: this never weakens the mandatory browser-QA
-gate (gate 4 in run-gates.sh) — that gate is unconditional for any frontend
-stack regardless of this answer.
+gate (gate 4 in run-gates.sh) — that gate applies to any frontend
+stack regardless of this answer (it is only skipped when the developer declined the QA tooling).
 
 After all 3 replies received, **write in parallel** (fire all simultaneously):
 - `PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md` — all answers
@@ -870,6 +870,12 @@ Print `[Orchestrator] Phase 5/7: running quality gates (onboarding → test → 
 
 Execute all verification gates in order:
 
+0. **Missing gate tools — ask, never block.** If `run-gates.sh` (or a gate agent) reports
+   a tool is `not found on PATH`, ask the developer once per tool: install it now (show
+   the command) or continue without it. On **no**, append the tool name to
+   `.claude/memory/declined_tools.md` and re-run the script; the gate is then recorded
+   `SKIPPED (declined)` and the summary must say that check did not run.
+
 1. **Gate 0: Onboarding & Setup check**
    - Run `/onboarding-audit` or verify using the static checks in `run-gates.sh`. If it fails, report onboarding friction and halt.
 
@@ -885,7 +891,7 @@ Execute all verification gates in order:
    - Dispatch `sonar-agent` to run `<lint command from CLAUDE.md>`.
    - Ensure the sonar agent runs both the static lint command and the **Maintainability specialist pass** (auditing deep nesting complexity, naming inconsistencies, duplications, and dead code).
 
-5. **Gate 4: Live Browser/Mobile QA Audit (MANDATORY for all profiles — small, standard, enterprise)**
+5. **Gate 4: Live Browser/Mobile QA Audit (runs for all profiles — small, standard, enterprise; skipped only if the developer declined the QA tooling)**
    - Check if CLAUDE.md stacks list any frontend or mobile technologies (e.g. `nextjs`, `react`, `angular`, `vue`, `svelte`, `react-native`, `flutter`).
    - If present, **FIRST: auto-start backend + frontend servers** (if not already running):
 
@@ -995,8 +1001,8 @@ Execute all verification gates in order:
     own Step -2 defaults to `.claude` if this is omitted, but pass it
     explicitly to stay consistent with the rest of this pipeline run) to
     execute E2E UI verification (Phase 5a) on the running application:
-    - **Web Projects**: Run live checks against the dev server using the `chrome-devtools` MCP server tools (auto-installed/activated by qa-agent Step -1 if missing). No Playwright.
-    - **Mobile Projects**: Start the emulator/simulator and execute Maestro flows using the `maestro` MCP server tools (auto-installed/activated by qa-agent Step -1 if missing).
+    - **Web Projects**: Run live checks against the dev server using the `chrome-devtools` MCP server tools (offered for install by qa-agent Step -1 if missing). No Playwright.
+    - **Mobile Projects**: Start the emulator/simulator and execute Maestro flows using the `maestro` MCP server tools (offered for install by qa-agent Step -1 if missing).
     - qa-agent drives the Primary User Journey end-to-end FIRST, then audits
       per-screen, then runs its own internal fix→re-audit round loop (up to
       3 rounds) before returning — this dispatch is a single Task call from
@@ -1009,22 +1015,26 @@ Execute all verification gates in order:
 
     **Record the verdict (MANDATORY):** after qa-agent returns, update
     `PROJECT_ROOT/LAYER_DIR/memory/gate_results.md` row `| 4 | qa (browser) |` from
-    PENDING to PASS, **FAIL**, or **BLOCKED**, and require qa-agent to have written
-    `PROJECT_ROOT/LAYER_DIR/memory/qa_report.md` with a `verdict:` line. No
+    PENDING to PASS, **FAIL**, or `SKIPPED (declined)`, and require qa-agent to have
+    written `PROJECT_ROOT/LAYER_DIR/memory/qa_report.md` with a `verdict:` line. No
     qa_report.md on disk = the gate did NOT run, whatever the agent's text says.
-    A FAIL **or BLOCKED** verdict stops the pipeline exactly like a failing test
-    gate: print findings, write state, end turn. **BLOCKED means qa-agent could
-    not prove its browser/device MCP backend was actually callable and refused
-    to substitute a static source-code review** — treat it identically to FAIL,
-    never as a soft pass or as "gates green with a note." Do not retry
-    qa-agent automatically; report the exact BLOCKED reason to the developer
-    (see qa-agent.md Step -1 proof-of-life check) and let them re-run /qa once
-    the MCP handshake has actually completed.
+    - **FAIL** stops the pipeline exactly like a failing test gate: print findings,
+      write state, end turn.
+    - **`verdict: SKIPPED` with `declined_by: developer`** is the developer's own,
+      explicit choice to continue without live QA (they declined to install the
+      browser/device MCP, or chose "skip" when it was not callable). It is NOT a
+      failure and NOT a pass: record row 4 as `SKIPPED (declined)`, continue to
+      Gate 5, and put this line in every completion summary: `⚠ Live QA was skipped
+      at the developer's request — the UI was NOT verified.` Never describe a
+      SKIPPED (declined) gate as "QA passed" or "gates green" without that line.
+    - qa-agent never substitutes a static source-code review for QA. If it returns
+      anything else without a `verdict:` line, treat the gate as not run.
 
     **This gate cannot be skipped by forgetting:** run-gates.sh writes row 4 as
-    PENDING for every frontend-stack project. The pipeline may NOT proceed past
-    Phase 5, return COMPLETED to a forge batch, or be summarised as "gates green"
-    while gate_results.md contains any PENDING or FAIL row.
+    PENDING for every frontend-stack project unless qa_report.md carries the
+    developer-declined SKIPPED verdict. The pipeline may NOT proceed past Phase 5,
+    return COMPLETED to a forge batch, or be summarised as "gates green" while
+    gate_results.md contains any PENDING or FAIL row.
 
     **After QA completes, cleanup:** kill any servers (BACKEND_PID and FRONTEND_PID) or emulators started by this orchestrator run.
 

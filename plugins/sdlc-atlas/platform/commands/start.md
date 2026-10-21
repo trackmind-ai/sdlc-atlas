@@ -23,22 +23,28 @@ dispatch is framed (Task call, "background run", etc.).**
 
 ---
 
-## Step 0 — Caveman check (MANDATORY — before anything else)
+## Step 0 — Caveman check (optional — ask, never block)
+
+Caveman is an optional third-party plugin that enforces terse output. `/start` works
+without it, so this step asks once and continues whatever the answer is.
 
 ```bash
 cat "$HOME/.claude/.caveman-active" 2>/dev/null || echo "NOT_INSTALLED"
 ```
 
-If NOT_INSTALLED or empty:
+If active → proceed to Step 0b silently.
+
 If NOT_INSTALLED or empty:
 
-1. Print exactly:
+1. Ask the developer (AskUserQuestion), printing exactly:
    ```
    [start] Caveman plugin not detected.
-   Caveman cuts token usage ~75% and makes every agent faster. Install it now? (yes / no)
+   It is an optional third-party plugin that cuts token usage by enforcing terse
+   output. Install it now? (yes / no)
    ```
-2. Wait for reply.
-   - If **no** → print `Cannot proceed without caveman. Run /start again after installing.` and STOP.
+2. Wait for the reply.
+   - If **no** → print `Continuing without caveman — terse-output enforcement is off.
+     You can install it later.` and proceed to Step 0b. Do not ask again this session.
    - If **yes** → detect OS and run the correct installer:
 
 ```bash
@@ -54,14 +60,16 @@ uname -s 2>/dev/null || echo "Windows"
   curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.sh | bash
   ```
 
-After installer completes, re-check:
+After the installer completes, re-check:
 
 ```bash
 cat "$HOME/.claude/.caveman-active" 2>/dev/null || echo "NOT_INSTALLED"
 ```
 
 - If now active → print `✔ Caveman installed — continuing.` and proceed to Step 0b.
-- If still NOT_INSTALLED → print `Install did not complete. Please restart Claude Code and run /start again.` and STOP.
+- If still NOT_INSTALLED → print `Caveman did not activate (some installs only take effect
+  after a restart). Continuing without it — restart Claude Code later to enable it.`
+  and proceed to Step 0b. Do not stop.
 
 ---
 
@@ -109,62 +117,47 @@ session, not something to ask the developer or infer from disk):**
 
 ---
 
-## Step 0c — QA tooling check (MANDATORY — before anything else, including Step 1's menu)
+## Step 0c — QA tooling check (ask once, before anything else — never blocks)
 
-Every project this platform builds eventually needs live browser/mobile QA
-(qa-agent's E2E Journey + per-screen audit, Phase 5a). Checking for that
-tooling only at Phase 5a — after the whole app is scaffolded and built — is
-too late to be useful; if it's missing then, the discovery interrupts a
-finished pipeline instead of preventing wasted work. This gate makes sure
-the tooling is confirmed present (or the developer has explicitly accepted
-the tradeoff of proceeding without it) before a single interview question
-is asked.
+Live browser/mobile QA (qa-agent's E2E Journey + per-screen audit, Phase 5a) needs
+Chrome DevTools MCP (web) and/or Maestro MCP (mobile). Checking only at Phase 5a —
+after the whole app is built — is too late to be useful, so this step asks up front.
+It is the developer's choice: **installing is optional, and declining never stops
+`/start`.** Declining is recorded, and the QA gate is later recorded as
+`SKIPPED (declined)`; the final report then says the UI was not verified.
 
-**Host assumption:** this gate assumes Claude Code CLI (the `claude mcp`
-subcommand). Cursor and other hosts are not yet supported by this check —
-see the open host-detection proposal (P-001) for that separate gap. If the
-`claude` CLI itself is not present (see step 2 below), do not guess at a
-host-specific install path; ask the developer to confirm their host and
-tooling manually instead.
+**Host assumption:** this step assumes Claude Code CLI (the `claude mcp` subcommand).
 
 1. Check what's already connected:
    ```bash
    claude mcp list 2>&1 | grep -Ei 'chrome-devtools|maestro'
    ```
 
-2. If the `claude` command itself is not found (non-Claude-Code host, or
-   CLI not on PATH):
+2. If the `claude` command itself is not found (non-Claude-Code host, or CLI not on
+   PATH), do not ask anything and do not stop. Print:
    ```
-   [start] Could not run `claude mcp list` — this check assumes the Claude
-   Code CLI. If you're on a different host (e.g. Cursor), QA tooling setup
-   isn't automated here yet.
-   Please confirm: are you running this inside Claude Code CLI? (yes / no)
+   [start] Could not run `claude mcp list`, so QA tooling setup is not automated on
+   this host. Continuing without it. Install Chrome DevTools MCP / Maestro MCP
+   manually if you want live QA later.
    ```
-   - **no** → print `This platform's automated QA tooling setup currently
-     only supports Claude Code CLI. Please set up Chrome DevTools MCP /
-     Maestro MCP manually for your host, or switch to Claude Code CLI, then
-     run /start again.` and STOP.
-   - **yes** (claude CLI should be present but the command still failed) →
-     print `⚠ 'claude' command not found on PATH despite confirming Claude
-     Code CLI — please verify your Claude Code installation, then run
-     /start again.` and STOP.
+   Record `qa_tooling: web=unavailable, mobile=unavailable` in `context_bundle.md`
+   and proceed to Step 1.
 
-3. For each tool relevant to a general-purpose greenfield build (default:
-   check both — a project's actual stack, web vs mobile vs both, isn't known
-   yet at this point in `/start`, so check both up front rather than guessing):
+3. For each tool (check both — the project's stack is not known yet at this point):
 
    - **Chrome DevTools MCP listed as `✔ Connected`** → note `web_qa: ready`.
    - **Maestro MCP listed as `✔ Connected`** → note `mobile_qa: ready`.
-   - **Either missing entirely** → do NOT silently skip it. Print:
+   - **Either missing** → do NOT silently skip it. Ask the developer
+     (AskUserQuestion), printing:
      ```
      [start] QA tooling check:
        Chrome DevTools MCP (web QA):   <✔ ready | ✘ missing>
        Maestro MCP (mobile QA):        <✔ ready | ✘ missing>
 
-     This platform requires live browser/mobile QA tooling before building a
-     frontend — qa-agent cannot audit or fix UI issues without it, and per
-     platform policy Phase 5a QA is mandatory and cannot be skipped for
-     frontend-stack projects. Install missing tooling now? (yes / no)
+     Live QA needs this tooling; qa-agent cannot audit or fix UI without it.
+     Install the missing tooling now? (yes / no)
+     No is fine: setup continues, the QA gate is recorded as SKIPPED (declined),
+     and the final report will say the UI was not verified.
      ```
    - **yes** → install each missing tool, same commands qa-agent Step -1 uses:
      ```bash
@@ -180,40 +173,32 @@ tooling manually instead.
      ```bash
      claude mcp list 2>&1 | grep -Ei 'chrome-devtools|maestro'
      ```
-     - **Still missing after install attempt** → print the exact failing
-       command's output, then: `⚠ Automated install did not complete. Please
-       install manually (see qa-agent.md Step -1 for the exact commands),
-       then run /start again.` and STOP. Do not proceed to Step 1 with QA
-       tooling still absent and unacknowledged.
-     - **Newly connected** → **MCP servers only attach at session start**, same
-       constraint as qa-agent Step -1. Print exactly:
+     - **Still missing after install attempt** → print the exact failing command's
+       output, then: `⚠ Automated install did not complete. Continuing without it;
+       see qa-agent.md Step -1 for the manual commands.` Record
+       `qa_tooling: <tool>=unavailable` and proceed to Step 1. Do not stop.
+     - **Newly connected** → MCP servers only attach at session start, so the tool is
+       configured but not callable yet. Print:
        ```
-       ✔ <tool> MCP installed and configured, but needs a session restart to
-       activate — MCP servers only connect at startup.
-       Please restart Claude Code (or run /mcp to reconnect), then run
-       /start again to continue.
+       ✔ <tool> MCP installed and configured. It connects after a restart of Claude
+       Code (or /mcp). Continuing setup now; QA will re-check it live at Phase 5a and
+       offer a restart or skip then.
        ```
-       End the turn. Do not proceed to Step 1 in the same session as a
-       fresh MCP install — it will not actually be connected yet regardless
-       of what `claude mcp add` reported.
-   - **no** (developer declines install) → this is an explicit, informed
-     choice to proceed without QA tooling, not a silent gap. Print:
+       Record `qa_tooling: <tool>=installed_needs_restart` and proceed to Step 1 in
+       the same session. Do not end the turn.
+   - **no** (developer declines install) → print:
      ```
-     ⚠ Proceeding without <missing tool(s)> — qa-agent's Phase 5a gate will
-     fail or be unable to run its E2E Journey/per-screen audit later. You'll
-     need to install this before that gate can pass. Continuing at your
-     request.
+     Continuing without <missing tool(s)>. Phase 5a QA will be recorded as SKIPPED
+     (declined) and the UI will not be verified. You can install the tooling and run
+     /qa at any time.
      ```
-     Record this acknowledgement in `context_bundle.md` (`qa_tooling:
-     web=<ready|declined>, mobile=<ready|declined>`) so forge-agent/qa-agent
-     don't re-litigate it, and proceed to Step 1.
-   - **Both already `✔ Connected`** → print `✔ QA tooling ready (Chrome
-     DevTools MCP + Maestro MCP).` and proceed to Step 1 silently otherwise
-     (no need to re-ask anything).
+     Record `qa_tooling: web=<ready|declined>, mobile=<ready|declined>` in
+     `context_bundle.md` so forge-agent/qa-agent don't re-ask, and proceed to Step 1.
+   - **Both already `✔ Connected`** → print `✔ QA tooling ready (Chrome DevTools MCP +
+     Maestro MCP).` and proceed to Step 1 silently otherwise (no need to re-ask).
 
-This check runs ONCE per `/start` invocation (fresh session), same rule as
-qa-agent Step -1's own session-start check — do not re-run it mid-session
-if `/start` is resumed via Branch C without a fresh session start.
+This check runs ONCE per `/start` invocation (fresh session) — do not re-run it
+mid-session if `/start` is resumed via Branch C without a fresh session start.
 
 ---
 
@@ -391,9 +376,10 @@ add one."
 
 This choice is not cosmetic — it sets `## Quality gates § tests.coverage_threshold`
 in `CLAUDE.md`, which `test-agent` enforces on every `/feature` build from now
-on, and it does NOT weaken the mandatory browser-QA gate (gate 4 in
-`run-gates.sh` is mandatory for any frontend stack regardless of this
-answer — "Light" only relaxes the coverage number, never the QA requirement).
+on, and it does NOT weaken the browser-QA gate (gate 4 in
+`run-gates.sh` applies to any frontend stack regardless of this
+answer — "Light" only relaxes the coverage number; the QA gate is only ever
+skipped when the developer declined the QA tooling).
 
 ---
 
