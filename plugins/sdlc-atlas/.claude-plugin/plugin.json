@@ -1,7 +1,7 @@
 {
   "name": "sdlc-atlas",
   "description": "Agent-driven SDLC platform. Takes a requirement to production-ready code through governed pipelines: versioned specs, approval gates, and ordered quality gates across a four-layer capability model (platform, stacks, organization, project).",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "author": {
     "name": "Trackmind",

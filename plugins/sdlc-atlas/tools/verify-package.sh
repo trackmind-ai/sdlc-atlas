@@ -91,9 +91,11 @@ for d in $(find projects -type d -name skills 2>/dev/null); do
   done
 done
 
-# 2d. Platform layer — agents/ and skills/ must be FLAT (built-ins are flat .md files)
+# 2d. Platform layer — agents/ must be flat .md files; skills/ holds one <name>/SKILL.md folder per skill
+# (the layout Claude Code plugins require) and nothing deeper.
 for d in $(find platform -type d \( -name agents -o -name skills \) 2>/dev/null); do
-  if find "$d" -mindepth 1 -type d | grep -q .; then
+  depth=1; [ "$(basename "$d")" = skills ] && depth=2
+  if find "$d" -mindepth "$depth" -type d | grep -q .; then
     bad "nested subfolders in platform built-in layer (must be flat): $d"
   else
     ok "flat platform built-ins: $d"
@@ -107,6 +109,7 @@ skill_exists() {
   local ref="$1"
   find stacks projects -path "*/skills/$ref/SKILL.md" | grep -q . && return 0
   find platform -path "*/skills/${ref}.md" | grep -q . && return 0
+  find platform -path "*/skills/${ref}/SKILL.md" | grep -q . && return 0
   return 1
 }
 

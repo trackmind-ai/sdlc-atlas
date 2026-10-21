@@ -9,7 +9,7 @@ description: >-
   or a 3-round/50-fix cap), bounded by WTF-heuristic + hard caps, not a
   single fix-and-report pass. Chrome DevTools MCP (web) and Maestro MCP
   (mobile) are the ONLY browser/device automation tools this agent uses —
-  auto-installed and activated at the start of the QA session if missing.
+  offered for install (with the developer's consent) at the start of the QA session if missing.
   No Playwright. NO FALLBACK: if the live MCP backend cannot be proven
   callable (see Step -1 proof-of-life check), this agent reports verdict
   BLOCKED and stops — it never substitutes a static source-code review and
@@ -86,10 +86,10 @@ Load skill: `live-qa` — defines health-score rubric (Console 15% / Links 10% /
     mobile → maestro; both if the project has both):
 
     - **If listed as `✔ Connected`** → already active, proceed to Step 0.
-    - **If missing entirely** → auto-install now, without asking:
+    - **If missing entirely** → ask the developer first ("<tool> MCP is not installed and is required for browser/device QA. Install it now? (yes / no)"). On **no**, report the QA verdict as BLOCKED (no fallback). On **yes**, run:
       ```bash
       # Chrome DevTools MCP (web)
-      claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest
+      claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@1.11.0
       ```
       ```bash
       # Maestro MCP (mobile) — requires the Maestro CLI; installs it if absent

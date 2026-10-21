@@ -4,7 +4,7 @@ description: Greenfield scaffold procedure for a new React 18 + TypeScript + Vit
 ---
 # React Bootstrap Procedure
 
-1. Scaffold: `npm create vite@latest frontend -- --template react-ts`.
+1. Scaffold: `npm create vite@9.2.1 frontend -- --template react-ts`.
 2. Install core deps: `npm install axios @tanstack/react-query zustand react-router-dom`.
 3. Install dev deps: `npm install -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom`.
 4. Pin exact versions; commit `package-lock.json`.

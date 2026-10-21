@@ -16,8 +16,8 @@ If `NOT_INSTALLED` or empty → stop and print:
 [Setup] Caveman plugin not detected.
 
 Install it first:
-  Windows:  irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex
-  Mac/Linux: curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash
+  Windows:  irm https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.ps1 | iex
+  Mac/Linux: curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/bad48a0e1df55e05e3f52249afa35ecc1909ee76/install.sh | bash
 
 Restart Claude Code, then re-run /setup.
 ```

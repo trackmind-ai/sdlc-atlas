@@ -230,7 +230,7 @@ This ensures the fix loop stays safe and doesn't spiral into blindly "fixing" th
 QA agent drives the browser/device **only through these two MCP servers** —
 never Playwright, never raw CDP-over-Bash. Both are activated once at the
 start of every QA session (qa-agent Step -1): checked via `claude mcp list`,
-auto-installed via `claude mcp add` if missing, and — since a server only
+offered for install via `claude mcp add` (with the developer's consent) if missing, and — since a server only
 attaches at session start — the run pauses with a restart request if either
 was just installed. See `platform/agents/qa-agent.md` Step -1 for the exact
 install commands.
