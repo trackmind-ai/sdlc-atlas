@@ -41,12 +41,21 @@ If EXISTS → mark as `[SKIP]` (already installed), no need to regenerate.
 
 ---
 
-## Step 3 — Fetch raw sources for missing stacks
+## Step 3 — Ask, then fetch raw sources for missing stacks
 
-Pass ALL missing stack names in ONE bash call:
+First run the consent check for ALL missing stacks in ONE call. It makes no network
+request; it prints `[NEEDS_CONFIRM]` with every source each stack would contact:
 
 ```bash
 "PLATFORM_HOME/stacks/stack-orchestrator/bin/stack_fetcher.py" STACK1 STACK2 ...
+```
+
+Ask the developer once (AskUserQuestion), showing those sources: download them and
+generate these stacks? **No** → stop here, fetch nothing, and say no stack was installed.
+**Yes** (for all or some) → fetch only the approved stacks:
+
+```bash
+"PLATFORM_HOME/stacks/stack-orchestrator/bin/stack_fetcher.py" --confirm STACK1 STACK2 ...
 ```
 
 For each stack in the output:

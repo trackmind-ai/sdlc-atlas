@@ -390,6 +390,13 @@ bash "PLATFORM_HOME/scripts/setup-stacks.sh" "PLATFORM_HOME" "PROJECT_ROOT" STAC
 
 Read every output line:
 
+- `NEEDS_CONFIRM: SLUG` → the stack is not bundled and nothing has been downloaded.
+  Ask the developer once (AskUserQuestion), showing the sources the script printed:
+  `Stack 'SLUG' isn't bundled. Download these public pages to generate it?`
+  - **yes** → run `python3 "PLATFORM_HOME/stacks/stack-orchestrator/bin/stack_fetcher.py" --confirm SLUG`,
+    then `/fetch-stack SLUG`, then re-run setup-stacks.sh.
+  - **no** → do not fetch. Continue without that stack (platform defaults apply) and
+    note `stack SLUG not installed (declined by developer)` in the context bundle.
 - `NEEDS_FETCH: SLUG` → invoke `/fetch-stack SLUG`, then re-run setup-stacks.sh.
 - `FETCH_FAILED: SLUG` → print warning, continue without that stack.
 - Wait until every slug shows `stack-done: SLUG`.
@@ -551,7 +558,7 @@ same script instead of hand-rolling per-branch `cp` logic:
 bash "PLATFORM_HOME/scripts/setup-stacks.sh" "PLATFORM_HOME" "PROJECT_ROOT" DETECTED_STACK1 DETECTED_STACK2 ...
 ```
 
-Read output the same way as Branch A: `NEEDS_FETCH:`/`FETCH_FAILED:`/
+Read output the same way as Branch A: `NEEDS_CONFIRM:`/`NEEDS_FETCH:`/`FETCH_FAILED:`/
 `stack-done:` per slug.
 
 After the script completes, copy remaining platform-level settings (the

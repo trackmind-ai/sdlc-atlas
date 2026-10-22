@@ -5,7 +5,13 @@
 stack_fetcher.py — parallel full-stack installer for the stack-orchestrator.
 
 Modes:
-  stack_fetcher.py <stack> [<stack2> ...]   Fetch raw sources for one or more stacks.
+  stack_fetcher.py <stack> [<stack2> ...]   Consent check only: prints what would be
+                                             downloaded for each missing stack and a
+                                             NEEDS_CONFIRM line, then exits 0 WITHOUT any
+                                             network request. Ask the developer first.
+
+  stack_fetcher.py --confirm <stack> ...    Fetch raw sources for one or more stacks.
+                                             Only run this after the developer said yes.
                                              Sources are written to:
                                                PLATFORM_HOME/stacks/<stack>/raw-sources.md
                                              All stacks are fetched in parallel.
@@ -591,6 +597,28 @@ def install_one(stack: str) -> tuple[str, bool, str]:
     return stack, True, msg
 
 
+def consent_message(stack: str) -> str:
+    """What a fetch of `stack` would contact. Built from static config, no network."""
+    lines = [
+        f"[NEEDS_CONFIRM] Stack '{stack}' is not installed. Generating it downloads public",
+        "  pages from these sources (the search sites receive only the stack name):",
+    ]
+    for url in OFFICIAL_DOCS.get(stack, []):
+        lines.append(f"    - {url}")
+    lines += [
+        f"    - skillsmp.com skill search for '{stack}' (skill files from raw.githubusercontent.com)",
+        f"    - github.com/{AITMPL_REPO} (api.github.com, raw.githubusercontent.com)",
+    ]
+    lines += [f"    - github.com/{repo}" for repo in GITHUB_REPOS]
+    lines += [
+        f"    - agentdepot.dev search for '{stack}', read through r.jina.ai",
+        "  Nothing was downloaded. Ask the developer: fetch these and generate the stack?",
+        f"    yes -> stack_fetcher.py --confirm {stack}, then /fetch-stack {stack}",
+        "    no  -> continue without this stack (platform defaults apply)",
+    ]
+    return "\n".join(lines)
+
+
 # --------------------------------------------------------------------------- #
 # Detect mode (hook)
 # --------------------------------------------------------------------------- #
@@ -620,7 +648,7 @@ def detect() -> int:
         print(
             f"[stack-orchestrator] This project declares stack = \"{stack}\" but "
             f"{STACKS_ROOT / stack}/ is missing. "
-            f"Run: /fetch-stack {stack}"
+            f"Run: /fetch-stack {stack} (it asks before downloading anything)"
         )
         return 0
     return 0
@@ -644,13 +672,25 @@ def sanitize_stack(raw: str) -> str:
 
 def main() -> int:
     args = sys.argv[1:]
+    confirmed = "--confirm" in args
+    args = [a for a in args if a != "--confirm"]
     if not args:
-        fail("Usage: stack_fetcher.py <stack> [<stack2> ...] | --detect")
+        fail("Usage: stack_fetcher.py [--confirm] <stack> [<stack2> ...] | --detect")
 
     if args[0] == "--detect":
         return detect()
 
     stacks = [sanitize_stack(a) for a in args]
+
+    # No network without the developer's yes: report what would be fetched and stop.
+    if not confirmed:
+        for s in stacks:
+            if stack_exists(s):
+                print(f"[SKIP] {STACKS_ROOT / s}/ already installed.")
+            else:
+                print(consent_message(s))
+                print()
+        return 0
 
     if len(stacks) == 1:
         _, ok, msg = install_one(stacks[0])

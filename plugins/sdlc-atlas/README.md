@@ -77,9 +77,13 @@ asked, and if you say no, nothing is installed and setup continues. Nothing in `
 
 **Network access.**
 
-- `stack_fetcher.py` downloads public documentation pages (for example nodejs.org,
-  react.dev, fastapi.tiangolo.com) to author a new stack with `/fetch-stack`. It runs only
-  when you ask for a stack that is not bundled.
+- `stack_fetcher.py` downloads public pages to author a stack that is not bundled: the
+  framework's documentation (for example nodejs.org, react.dev, fastapi.tiangolo.com),
+  skill files from skillsmp.com and GitHub (github.com/davila7/claude-code-templates,
+  github.com/JhonMA82/awesome-clinerules), and an agentdepot.dev search read through
+  r.jina.ai. The search sites receive only the stack name. **It asks you every time
+  before downloading anything**, listing those sources; without your yes it makes no
+  network request, and saying no continues without that stack.
 - Azure DevOps commands (`/feature` from a work item, `/raise-pr`) call
   `dev.azure.com` with the `AZURE_DEVOPS_EXT_PAT` token you provide in your environment.
   Without that variable they do nothing. Agents never push to protected branches; a human
