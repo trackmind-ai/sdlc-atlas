@@ -240,16 +240,26 @@ Tell the developer:
 Stack 'STACK_NAME' not found in PLATFORM_HOME. Auto-generating via stack-orchestrator...
 ```
 
-Run the fetcher:
+**Ask before any download.** Run the consent check (no network):
 ```bash
 python3 "PLATFORM_HOME/stacks/stack-orchestrator/bin/stack_fetcher.py" STACK_NAME
 ```
+It prints `[NEEDS_CONFIRM]` with every source it would contact. Ask the developer once
+(AskUserQuestion), showing that list: `Download these public pages to generate the
+'STACK_NAME' stack?`
+- **no** → do not fetch. Tell the developer the pipeline continues without a
+  stack-specific layer (platform defaults apply), note it in the context bundle, and skip
+  to the next step.
+- **yes** → run the fetch:
+```bash
+python3 "PLATFORM_HOME/stacks/stack-orchestrator/bin/stack_fetcher.py" --confirm STACK_NAME
+```
 
 Read the full output:
-- If output contains `[FAIL]` → stop and tell developer:
+- If output contains `[FAIL]` → do not stop. Tell the developer:
   ```
-  Could not fetch sources for 'STACK_NAME'. The stack name may be wrong or there is a network issue.
-  Try a different name or check your connection, then re-run /feature.
+  Could not fetch sources for 'STACK_NAME' (wrong name or network issue). Continuing
+  without a stack-specific layer; run /fetch-stack STACK_NAME later to add it.
   ```
 - If output contains `[OK] RAW FETCHED` → note the `raw-sources.md` path printed in the output.
 

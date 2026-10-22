@@ -8,6 +8,10 @@ description: >-
 
 # /fetch-stack <SLUG>
 
+**Downloads need the developer's yes.** If `RAW_SOURCES` below does not exist yet, run
+`stack_fetcher.py SLUG` (no network) to show what would be fetched, ask the developer,
+and only on yes run `stack_fetcher.py --confirm SLUG`. On no, stop and fetch nothing.
+
 **You are the stack author.** Your job is to read the raw sources and generate
 a complete, production-quality L1 stack at `PLATFORM_HOME/stacks/SLUG/`.
 

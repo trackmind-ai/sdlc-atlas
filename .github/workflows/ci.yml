@@ -55,6 +55,7 @@ jobs:
           cd plugins/sdlc-atlas
           bash tools/test-approval-hook.sh
           bash tools/test-gates.sh
+          bash tools/test-stack-fetch-consent.sh
           bash tools/verify-package.sh
 
   lint:
