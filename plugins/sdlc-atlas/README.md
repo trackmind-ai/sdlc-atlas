@@ -95,6 +95,32 @@ and documents such as ADRs and designs in the repository. It never writes outsid
 project except the optional `install.sh --platform` route described in the repository
 README.
 
+## Try it
+
+Three prompts to start with:
+
+1. `/start`. Interviews you one question at a time about the project, then sets up the
+   governed layer in that folder.
+2. `/feature add a due date to todo items`, then `/approve-spec todo/add-due-date` once you
+   have read the spec. Agents cannot write production code until you approve.
+3. `/quality-check`. Runs the quality gates in order and writes the results to
+   `.claude/memory/gate_results.md`.
+
+## Troubleshooting
+
+- **An edit is blocked before any code exists.** The approval hook is doing its job: run
+  `/approve-spec <feature>/<change>` after reviewing the spec. Approval is recorded in
+  `.claude/memory/approvals/`.
+- **"capability files already exist".** Those files change only through
+  `/approve-proposal`, not by direct edits.
+- **A tool is not installed** (the caveman plugin, browser or device QA tooling, a linter).
+  The plugin asks whether to install it. If you say no it continues, and the matching gate
+  is recorded as `SKIPPED (declined)` in `gate_results.md`. Nothing is shown as passed.
+- **Live QA hits a CAPTCHA or login wall.** It asks you to finish the step by hand and
+  resume, or to skip live QA.
+- **Hooks do nothing in another project.** They only act in projects where `/start` has set
+  up the governed layer.
+
 ## Requirements
 
 Claude Code, `bash`, and `git`. Python 3 for stack fetching and some gates. Node.js for
