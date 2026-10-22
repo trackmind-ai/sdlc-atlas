@@ -201,7 +201,7 @@ Derive COVERAGE_THRESHOLD from Q7b: 1→70, 2→85, 3→0. This is recorded even
 if Q7 was answered "skip" — it applies the moment a test command is added
 later. Note for the developer: this never weakens the mandatory browser-QA
 gate (gate 4 in run-gates.sh) — that gate applies to any frontend
-stack regardless of this answer (it is only skipped when the developer declined the QA tooling).
+stack regardless of this answer (it is only skipped when the developer declined live QA or its tooling).
 
 After all 3 replies received, **write in parallel** (fire all simultaneously):
 - `PROJECT_ROOT/.claude/memory/context_bundle.md` — all answers
@@ -848,7 +848,7 @@ Execute all verification gates in order:
    - Dispatch `sonar-agent` to run `<lint command from CLAUDE.md>`.
    - Ensure the sonar agent runs both the static lint command and the **Maintainability specialist pass** (auditing deep nesting complexity, naming inconsistencies, duplications, and dead code).
 
-5. **Gate 4: Live Browser/Mobile QA Audit (runs for all profiles — small, standard, enterprise; skipped only if the developer declined the QA tooling)**
+5. **Gate 4: Live Browser/Mobile QA Audit (runs for all profiles — small, standard, enterprise; skipped only if the developer declined live QA or its tooling)**
    - Check if CLAUDE.md stacks list any frontend or mobile technologies (e.g. `nextjs`, `react`, `angular`, `vue`, `svelte`, `react-native`, `flutter`).
    - If present, **FIRST: auto-start backend + frontend servers** (if not already running):
 
@@ -951,7 +951,17 @@ Execute all verification gates in order:
       the pipeline here exactly like any other gate failure — do not proceed to
       Gate 5 or report gates green.
 
-    If `EXISTS` → proceed. **Run qa-agent** (Task dispatch) to
+    If `EXISTS` → proceed.
+
+    **Ask before running (developer's choice):** live QA opens a browser or
+    device and takes several minutes, so ask once (AskUserQuestion): `Run live
+    QA now, or skip it?` — **run** (recommended) dispatches qa-agent as below;
+    **skip** writes `PROJECT_ROOT/.claude/memory/qa_report.md` with
+    `verdict: SKIPPED`, `declined_by: developer`, `ui_verified: false`, records
+    row 4 as `SKIPPED (declined)`, and continues to Gate 5 with the summary line
+    `⚠ Live QA was skipped at the developer's request — the UI was NOT verified.`
+
+    On **run**: **Run qa-agent** (Task dispatch) to
     execute E2E UI verification (Phase 5a) on the running application:
     - **Web Projects**: Run live checks against the dev server using the `chrome-devtools` MCP server tools (offered for install by qa-agent Step -1 if missing). No Playwright.
     - **Mobile Projects**: Start the emulator/simulator and execute Maestro flows using the `maestro` MCP server tools (offered for install by qa-agent Step -1 if missing).

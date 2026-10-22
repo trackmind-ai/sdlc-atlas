@@ -339,7 +339,7 @@ in `CLAUDE.md`, which `test-agent` enforces on every `/feature` build from now
 on, and it does NOT weaken the browser-QA gate (gate 4 in
 `run-gates.sh` applies to any frontend stack regardless of this
 answer — "Light" only relaxes the coverage number; the QA gate is only ever
-skipped when the developer declined the QA tooling).
+skipped when the developer declined live QA or its tooling).
 
 ---
 

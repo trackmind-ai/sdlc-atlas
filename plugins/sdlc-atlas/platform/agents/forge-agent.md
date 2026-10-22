@@ -583,7 +583,7 @@ anything missing gets RUN NOW, not skipped:
    gate_results.md from an earlier run.
 3. **Browser QA (frontend stacks):** if the stack includes
    react/nextjs/angular/vue/svelte/react-native/flutter, gate_results.md row 4
-   must be PASS, or `SKIPPED (declined)` when the developer declined the QA tooling
+   must be PASS, or `SKIPPED (declined)` when the developer declined live QA or its tooling
    (then say in the summary that the UI was not verified). If PENDING or stale → print `→ qa-agent` and dispatch qa-agent
    NOW (full mode, against the running dev server; start it if needed). Write
    its verdict into gate_results.md row 4. FAIL verdict → the forge is NOT
@@ -652,7 +652,7 @@ next_action: run /raise-pr
     saying "done" is a claim; the file/gate row is the evidence.
 16. Browser QA (qa-agent) is a gate for frontend stacks — the forge is never
     complete with gate_results.md row 4 PENDING/FAIL/stale. Row 4 may be
-    `SKIPPED (declined)` only when the developer explicitly declined the QA tooling.
+    `SKIPPED (declined)` only when the developer explicitly declined live QA or its tooling.
 17. State is written BEFORE every dispatch (`-in-progress`) and AFTER every
     verified completion. A stale orchestrator_state.md is a Phase failure, not
     a cosmetic issue — it is the only thing a cut-off session can resume from.

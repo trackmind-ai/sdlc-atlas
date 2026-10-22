@@ -13,8 +13,8 @@ Orchestrator, setup-agent, `/start` and `/setup` offer to install the caveman pl
    each of which writes the marker. A conversational "yes" is not approval.
 3. ⚙ Quality gates run via the gate-runner script (`scripts/run-gates.sh`) in
    fixed order; first failure stops. Browser QA (qa-agent, gate 4 — runs for
-   frontend stacks; `SKIPPED (declined)` only if the developer declined the QA
-   tooling) and the LLM review gate (5) follow the script and flip
+   frontend stacks; `SKIPPED (declined)` only if the developer declined
+   live QA or its tooling) and the LLM review gate (5) follow the script and flip
    their PENDING rows in `gate_results.md`. Gates are complete ONLY when
    `gate_results.md` has no PENDING/FAIL rows — nothing may be reported
    COMPLETED before that.
