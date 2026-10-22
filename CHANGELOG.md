@@ -9,6 +9,7 @@ may contain breaking changes; they will always be called out under **Changed**.
 ## [Unreleased]
 
 ### Changed
+- Plugin README: added three example prompts and a troubleshooting section.
 - External tools and plugins are now optional everywhere. `/start`, `/setup`, the orchestrator, setup-agent, qa-agent, test-agent, sonar-agent and security-agent ask before installing caveman, Chrome DevTools MCP, Maestro MCP or a missing test/lint/security tool. If the developer says no, nothing is installed and the run continues. Previously `/start` and `/setup` stopped without caveman, `/start` stopped when QA tooling was declined or failed to install, and qa-agent stopped on a failed MCP check.
 - A declined tool or declined QA tooling is recorded as `SKIPPED (declined)` in `gate_results.md` (QA via `qa_report.md` with `verdict: SKIPPED` and `declined_by: developer`; other tools via `.claude/memory/declined_tools.md`). `run-gates.sh` treats it as resolved, and the completion summary must say the check did not run. It is never recorded as a pass, and a static review is never presented as QA.
 - Narrowed the project allow list: `npx` is limited to named tools instead of `npx *`, `claude mcp add` to the two QA servers, `pip install` to requirements files and bandit. The `project-permissions` Standard profile matches.
