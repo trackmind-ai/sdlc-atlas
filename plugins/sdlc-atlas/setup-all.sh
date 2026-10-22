@@ -29,8 +29,8 @@ esac; done
 # a path already ending in a layer dir would nest it (.claude/.claude) - use the parent
 bs=$(printf '\134'); PROJ="${PROJ//"$bs"//}"; PROJ="${PROJ%/}"
 case "$PROJ" in
-  .claude|.cursor) PROJ=".." ;;
-  */.claude|*/.cursor) echo "    --project ends in a layer dir - using its parent"; PROJ="${PROJ%/*}" ;;
+  .claude) PROJ=".." ;;
+  */.claude) echo "    --project ends in a layer dir - using its parent"; PROJ="${PROJ%/*}" ;;
 esac
 
 echo "==> [1/6] Platform layer -> ~/.claude"

@@ -41,20 +41,14 @@ echo "$HOME/.claude"
 
 PROJECT_ROOT = first output
 PLATFORM_HOME = second output
-LAYER_DIR = the `layer_dir` value from this dispatch's Task Inputs, if
-provided (e.g. `.cursor` for a Cursor-targeted project); default to
-`.claude` if not provided (covers every dispatch that predates this input
-and every Claude-Code-targeted project). Every `PROJECT_ROOT/.claude/...`
-path below means `PROJECT_ROOT/LAYER_DIR/...` — read `.claude/` in this
-document as shorthand for "whichever LAYER_DIR was established here."
 
 ---
 
 ## Step 1 — Read all available context
 
 ```bash
-cat "PROJECT_ROOT/LAYER_DIR/memory/business_brief.md" 2>/dev/null || echo "EMPTY"
-cat "PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md" 2>/dev/null || echo "EMPTY"
+cat "PROJECT_ROOT/.claude/memory/business_brief.md" 2>/dev/null || echo "EMPTY"
+cat "PROJECT_ROOT/.claude/memory/context_bundle.md" 2>/dev/null || echo "EMPTY"
 ```
 
 Extract and store:
@@ -87,7 +81,7 @@ Initialise Q = 1 (running question counter — increment after every question as
 ## Step 2 — Check for existing UX brief
 
 ```bash
-ls "PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md" 2>/dev/null && echo "EXISTS" || echo "MISSING"
+ls "PROJECT_ROOT/.claude/memory/ux_brief.md" 2>/dev/null && echo "EXISTS" || echo "MISSING"
 ```
 
 If EXISTS → ask (counts as Q1, increment Q):
@@ -432,7 +426,7 @@ If KNOWN_COMPLIANCE is empty and DS_CONTENT does not define an accessibility sta
 
 ## Step 5 — Write ux_brief.md
 
-Write the validated UX synthesis to `PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md`:
+Write the validated UX synthesis to `PROJECT_ROOT/.claude/memory/ux_brief.md`:
 
 ```markdown
 # UX Review Report — <KNOWN_NAME>
@@ -474,7 +468,7 @@ generated_by: ux-research-agent
 - **Quality Metrics:** <readability, visual hierarchy, mobile layout responsiveness targets>
 ```
 
-Print: `✔ ux_brief.md written to LAYER_DIR/memory/`
+Print: `✔ ux_brief.md written to .claude/memory/`
 
 ---
 
@@ -486,7 +480,7 @@ Print:
 [ux-research] ✔ UX Research interview complete
               Questions asked: <Q - 1>
               Path: <A — default template | B — custom design system>
-              UX Brief saved: LAYER_DIR/memory/ux_brief.md
+              UX Brief saved: .claude/memory/ux_brief.md
 [ux-research] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

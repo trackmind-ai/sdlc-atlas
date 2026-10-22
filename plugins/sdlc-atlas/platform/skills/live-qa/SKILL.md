@@ -248,13 +248,14 @@ Session cookies (see skill: `session-sync`) are injected by calling the MCP
 tool's script-evaluation entry point with a `document.cookie` / storage write,
 not by opening a separate raw WebSocket.
 
-### Cooperative Takeover Protocol (MANDATORY Human-in-the-Loop)
+### Cooperative Takeover Protocol (Human-in-the-Loop)
 
 If the agent is blocked by a CAPTCHA, Multi-Factor Authentication (MFA) gate, complex login wall, or a persistent selector timeout:
 1. Write the state `{ "suspended": true, "reason": "blocked by captcha/MFA/selector" }` to `PROJECT_ROOT/.claude/memory/qa_state.json`.
 2. Output a clear alert: `⚠ QA AUTOMATION BLOCKED. Please run /automation-takeover to take control of Chrome, complete the step manually, and then run /automation-resume to hand control back to the agent.`
-3. Halt processing. Periodically inspect `PROJECT_ROOT/.claude/memory/qa_state.json`. Do not continue until `"suspended": false` is written.
-4. Once resumed, continue the health-score audit from the active browser tab's current state.
+3. Halt processing and ask the developer: complete the step by hand and resume, or skip live QA. Never try to solve or bypass a CAPTCHA or MFA prompt yourself.
+4. **Resume** → periodically inspect `PROJECT_ROOT/.claude/memory/qa_state.json` and continue the health-score audit from the active tab's current state once `"suspended": false` is written.
+5. **Skip** → write `qa_report.md` with `verdict: SKIPPED` and `declined_by: developer`. `run-gates.sh` then records gate 4 as `SKIPPED (declined)` and the summary says the UI was not verified.
 
 ### UI Test Caching & Journey Preservation (Test Cache)
 

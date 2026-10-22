@@ -22,22 +22,6 @@
 #   bash install.sh --doctor <path>               (validate a project layer; also flags out-of-sync files)
 #   bash install.sh --audit-stacks                (frontmatter conformance check, all installed stacks)
 #
-#   Target selection (default: claude — 100% unchanged behavior):
-#     bash install.sh --platform cursor            (builds $HOME/.cursor/ with Cursor-native
-#                                                    agents/*.md, skills/<n>/SKILL.md,
-#                                                    rules/*.mdc, mcp.json — converted from the
-#                                                    same platform/ + stacks/ source of truth.
-#                                                    Platform/stack COMMANDS become Skills with
-#                                                    disable-model-invocation: true, per Cursor's
-#                                                    documented commands-to-skills migration —
-#                                                    there is no separate commands/ output for
-#                                                    Cursor, see platform/converters/cursor.sh)
-#     bash install.sh --new-project <path> --target cursor
-#     bash install.sh --sync-project <path> --target cursor
-#     bash install.sh --doctor <path> --target cursor
-#   Any command also accepts a trailing `--target cursor` flag. See
-#   platform/converters/cursor.sh for the conversion rules.
-#
 # Supported stacks: angular, docker, fastapi, nestjs, nextjs, node, postgresql, python,
 #   react, vue  (plus stack-orchestrator, which generates any other stack on demand
 #   via /fetch-stack)
@@ -63,51 +47,30 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 log()  { printf '  \033[32m✔\033[0m %s\n' "$1"; }
 warn() { printf '  \033[33m!\033[0m %s\n' "$1"; }
 die()  { printf '  \033[31m✘\033[0m %s\n' "$1" >&2; exit 1; }
-# proj_root: callers append /.claude (or /.cursor) themselves, so a path that already ends
+# proj_root: callers append /.claude themselves, so a path that already ends
 # in a layer dir would nest it (.claude/.claude). Use the parent instead.
 proj_root() {
   local bs p; bs=$(printf '\134'); p="${1//"$bs"//}"; p="${p%/}"
   case "$p" in
-    .claude|.cursor) p=".." ;;
-    */.claude|*/.cursor) warn "project path ends in a layer dir - using its parent" >&2; p="${p%/*}" ;;
+    .claude) p=".." ;;
+    */.claude) warn "project path ends in a layer dir - using its parent" >&2; p="${p%/*}" ;;
   esac
   printf '%s' "$p"
 }
 
-# ---------------------------------------------------------------------------
-# Target resolution: which tool's native folder shape to build.
-#   claude  (default) → $HOME/.claude, .claude/ project layer (unchanged)
-#   cursor             → $HOME/.cursor, .cursor/ project layer (native shape,
-#                        converted from platform/stacks source via
-#                        platform/converters/cursor.sh)
-# Resolved once, up front, from either a trailing bare word after --platform
-# (e.g. `--platform cursor`) or an explicit `--target <name>` flag anywhere
-# in argv. Everything else in this script is unchanged for target=claude.
-# ---------------------------------------------------------------------------
-TARGET="claude"
+# Only the Claude Code target is supported; reject legacy --target / --platform <x>.
 _args=("$@")
 for ((i = 0; i < ${#_args[@]}; i++)); do
-  if [ "${_args[$i]}" = "--target" ] && [ -n "${_args[$((i + 1))]:-}" ]; then
-    TARGET="${_args[$((i + 1))]}"
+  if [ "${_args[$i]}" = "--target" ] && [ "${_args[$((i + 1))]:-}" != "claude" ]; then
+    die "Unknown target '${_args[$((i + 1))]:-}': only the Claude Code target is supported"
   fi
 done
-if [ "${1:-}" = "--platform" ] && [ -n "${2:-}" ] && [[ "${2:-}" != --* ]]; then
-  TARGET="$2"
+if [ "${1:-}" = "--platform" ] && [ -n "${2:-}" ] && [[ "${2:-}" != --* ]] && [ "$2" != "claude" ]; then
+  die "Unknown platform '$2': only the Claude Code target is supported"
 fi
-case "$TARGET" in
-  claude|cursor) ;;
-  *) die "Unknown target '$TARGET'. Supported: claude, cursor" ;;
-esac
 
-if [ "$TARGET" = "cursor" ]; then
-  PLATFORM_DEST="${AGENTICAI_SDLC_HOME:-$HOME/.cursor}"
-  PROJECT_LAYER_DIR=".cursor"
-  # shellcheck source=platform/converters/cursor.sh
-  source "$SRC_DIR/platform/converters/cursor.sh"
-else
-  PLATFORM_DEST="${AGENTICAI_SDLC_HOME:-$HOME/.claude}"
-  PROJECT_LAYER_DIR=".claude"
-fi
+PLATFORM_DEST="${AGENTICAI_SDLC_HOME:-$HOME/.claude}"
+PROJECT_LAYER_DIR=".claude"
 
 # ---------------------------------------------------------------------------
 # copy_subfolder_tree: copies agents/ or skills/ subfolder tree. Always overwrites.
@@ -136,10 +99,6 @@ copy_subfolder_tree() {
 # ---------------------------------------------------------------------------
 overwrite_layer() {
   local src="$1" dest="$2"
-  # NOTE: converters/ is deliberately NOT in this list — install_platform()
-  # copies it unconditionally for BOTH targets (see its own comment) since
-  # setup-stacks.sh needs it under PLATFORM_HOME regardless of which target
-  # this platform install itself used.
   for sub in agents skills commands templates profiles scripts bin; do
     [ -d "$src/$sub" ] || continue
     mkdir -p "$dest/$sub"
@@ -329,37 +288,10 @@ PYEOF
 install_platform() {
   mkdir -p "$PLATFORM_DEST"
 
-  if [ "$TARGET" = "cursor" ]; then
-    cursor_install_platform_tree "$SRC_DIR/platform" "$PLATFORM_DEST"
-    cursor_write_mcp "$PLATFORM_DEST/mcp.json"
-  else
-    overwrite_layer "$SRC_DIR/platform" "$PLATFORM_DEST"
-    merge_settings "$SRC_DIR/platform/settings.json" "$PLATFORM_DEST/settings.json"
-    cp "$SRC_DIR/platform/CLAUDE.md" "$PLATFORM_DEST/CLAUDE.md"
-    log "platform → CLAUDE.md"
-  fi
-
-  # converters/ is ALWAYS copied to PLATFORM_DEST regardless of TARGET —
-  # platform/scripts/setup-stacks.sh sources
-  # "$PLATFORM_HOME/converters/cursor.sh" at runtime whenever a developer
-  # runs /start with --target cursor for a NEW project, even from a
-  # Claude-Code-installed PLATFORM_HOME (a developer can install the
-  # platform once as --platform claude and still scaffold individual
-  # Cursor-targeted projects with it — the converter must be reachable
-  # either way). Missing this caused a real production failure: a Cursor
-  # agent running /start hit "cursor.sh converter is missing" because an
-  # earlier version of this script assumed .cursor/-installed platforms
-  # never needed their own copy of the converter that built them — wrong,
-  # since setup-stacks.sh (itself copied to BOTH targets) always looks for
-  # it under PLATFORM_HOME/converters/, not under the repo checkout.
-  if [ -d "$SRC_DIR/platform/converters" ]; then
-    mkdir -p "$PLATFORM_DEST/converters"
-    for f in "$SRC_DIR/platform/converters"/*.sh; do
-      [ -f "$f" ] || continue
-      cp "$f" "$PLATFORM_DEST/converters/$(basename "$f")"
-      log "platform → converters/$(basename "$f")"
-    done
-  fi
+  overwrite_layer "$SRC_DIR/platform" "$PLATFORM_DEST"
+  merge_settings "$SRC_DIR/platform/settings.json" "$PLATFORM_DEST/settings.json"
+  cp "$SRC_DIR/platform/CLAUDE.md" "$PLATFORM_DEST/CLAUDE.md"
+  log "platform → CLAUDE.md"
 
   mkdir -p "$PLATFORM_DEST/stacks"
   for stack_dir in "$SRC_DIR/stacks"/*/; do
@@ -368,7 +300,7 @@ install_platform() {
     install_stack_to_platform "$stack_name"
   done
   log "All stacks installed to $PLATFORM_DEST/stacks/"
-  log "Platform layer installed at $PLATFORM_DEST (target: $TARGET)"
+  log "Platform layer installed at $PLATFORM_DEST"
   log "The sdlc-atlas repo folder is no longer needed at runtime."
 }
 
@@ -393,13 +325,6 @@ install_stack() {
 
   [ -d "$proj" ] || die "Project path not found: $proj"
   dest="$proj/$PROJECT_LAYER_DIR"; mkdir -p "$dest"
-
-  if [ "$TARGET" = "cursor" ]; then
-    cursor_install_stack_tree "$stack" "$stack_src" "$dest"
-    cursor_write_mcp "$dest/mcp.json"
-    log "Stack '$stack' merged into $dest/agents/, $dest/skills/, $dest/rules/ (cursor-native)"
-    return 0
-  fi
 
   # Merge stack into project layer, grouped by stack name:
   #   agents/<stack>/<agent-name>/AGENT.md
@@ -437,13 +362,8 @@ new_project() {
   local proj="$1" dest="$1/$PROJECT_LAYER_DIR"
   [ -e "$dest" ] && die "$dest already exists — refusing to scaffold over it"
   mkdir -p "$proj"
-  if [ "$TARGET" = "cursor" ]; then
-    cp -r "$SRC_DIR/projects/project-template-cursor" "$dest"
-    log "Project layer scaffolded at $dest — open $dest/rules/00-platform.mdc and fill every [FILL IN]"
-  else
-    cp -r "$SRC_DIR/projects/project-template" "$dest"
-    log "Project layer scaffolded at $dest — open $dest/CLAUDE.md and fill every [FILL IN]"
-  fi
+  cp -r "$SRC_DIR/projects/project-template" "$dest"
+  log "Project layer scaffolded at $dest — open $dest/CLAUDE.md and fill every [FILL IN]"
 }
 
 init_layer() {
@@ -561,33 +481,6 @@ sync_project() {
   [ -d "$proj" ] || die "Project path not found: $proj"
   dest="$proj/$PROJECT_LAYER_DIR"
 
-  if [ "$TARGET" = "cursor" ]; then
-    [ -f "$dest/rules/00-platform.mdc" ] || die "No $dest/rules/00-platform.mdc — this is not an initialized cursor project. Run --new-project --target cursor first."
-    printf '\n-- syncing cursor platform tree (agents/skills/commands/rules) --\n'
-    cursor_install_platform_tree "$SRC_DIR/platform" "$dest"
-    cursor_write_mcp "$dest/mcp.json"
-
-    printf '\n-- syncing declared stack(s) --\n'
-    local raw_stacks; raw_stacks="$( { grep -E "^- primary:|^stack:" "$dest/rules/00-platform.mdc" 2>/dev/null || true; } | sed -E 's/.*(primary|stack):[[:space:]]*//' | tr -s ' \n' ' ')"
-    if [ -z "$raw_stacks" ]; then
-      warn "No stack declared in $dest/rules/00-platform.mdc — skipping stack sync."
-    else
-      for s in $raw_stacks; do
-        s="$(echo "$s" | xargs)"
-        [ -n "$s" ] && [ "$s" != "none" ] || continue
-        if [ -d "$SRC_DIR/stacks/$s" ] || [ -d "$PLATFORM_DEST/stacks/$s" ]; then
-          install_stack "$s" "$proj"
-        else
-          warn "stack '$s' declared but not found in repo stacks/ or $PLATFORM_DEST/stacks/ — skipped"
-        fi
-      done
-    fi
-
-    log "Project synced with current platform (cursor target): $dest"
-    log "Untouched (project-owned): rules/00-platform.mdc, knowledge.md, memory/, proposals/"
-    return 0
-  fi
-
   dest="$proj/.claude"
   [ -f "$dest/CLAUDE.md" ] || die "No $dest/CLAUDE.md — this is not an initialized project. Run --new-project or /start first."
 
@@ -655,30 +548,7 @@ sync_project() {
   log "Run: bash install.sh --doctor \"$proj\"  to verify."
 }
 
-doctor_cursor() {
-  local d="$1/.cursor" ok=1
-  [ -d "$d" ] || die "No .cursor/ at $1"
-  [ -f "$d/rules/00-platform.mdc" ] || { warn "missing rules/00-platform.mdc"; ok=0; }
-  grep -qE "^> Profile: (small|standard|enterprise)" "$d/rules/00-platform.mdc" 2>/dev/null || { warn "rules/00-platform.mdc missing 'Profile:' (small|standard|enterprise)"; ok=0; }
-  [ -d "$d/agents" ] && [ -n "$(ls -A "$d/agents" 2>/dev/null)" ] || warn "no agents/ files — run --sync-project --target cursor"
-  [ -d "$d/skills" ] || warn "no skills/ dir"
-  [ -d "$d/commands" ] || warn "no commands/ dir"
-  [ -d "$d/rules" ] || warn "no rules/ dir"
-  [ -f "$d/mcp.json" ] || warn "no mcp.json"
-  local fills; fills="$(grep -rl '\[FILL IN\]' "$d" 2>/dev/null || true)"
-  if [ -n "$fills" ]; then
-    while IFS= read -r f; do warn "unfilled placeholder in $f"; done <<< "$fills"
-    ok=0
-  fi
-  [ -d "$d/proposals" ] || warn "no proposals/ dir — /propose will create it on first use"
-  [ "$ok" = 1 ] && log "Cursor project layer looks healthy" || die "Fix the warnings above"
-}
-
 doctor() {
-  if [ "$TARGET" = "cursor" ]; then
-    doctor_cursor "$1"
-    return 0
-  fi
   local d="$1/.claude" ok=1
   [ -d "$d" ] || die "No .claude/ at $1"
   [ -f "$d/CLAUDE.md" ] || { warn "missing CLAUDE.md"; ok=0; }

@@ -96,17 +96,6 @@ echo "$HOME/.claude"
 - First output  → **PROJECT_ROOT**
 - Second output → **PLATFORM_HOME**
 
-**LAYER_DIR** = the `layer_dir` value from this dispatch's Task Inputs, if
-provided (e.g. `.cursor` for a Cursor-targeted project); default to
-`.claude` if not provided. Every `PROJECT_ROOT/.claude/...` path referenced
-anywhere below in this file means `PROJECT_ROOT/LAYER_DIR/...` — read
-`.claude/` in this document as shorthand for "whichever LAYER_DIR was
-established here." `~/.claude/...` / `$HOME/.claude/...` references are
-DIFFERENT — those are the Claude-Code-specific platform-home fallback
-location, not project-relative, and are left as-is (a Cursor equivalent
-would be `~/.cursor/...`, which this orchestrator does not currently branch
-to automatically — noted where relevant below, not silently assumed).
-
 **There is no SDLC_ROOT at runtime.** Never search for the sdlc-atlas repo folder.
 Never hardcode any username or home path.
 
@@ -114,12 +103,12 @@ Then **always** ensure the project skeleton exists — this is idempotent and sa
 even on a fully set-up project (mkdir -p never fails if folder already exists):
 
 ```bash
-mkdir -p "PROJECT_ROOT/LAYER_DIR/memory/approvals"
-mkdir -p "PROJECT_ROOT/LAYER_DIR/specs"
-mkdir -p "PROJECT_ROOT/LAYER_DIR/proposals"
-mkdir -p "PROJECT_ROOT/LAYER_DIR/agents"
-mkdir -p "PROJECT_ROOT/LAYER_DIR/skills"
-mkdir -p "PROJECT_ROOT/LAYER_DIR/commands"
+mkdir -p "PROJECT_ROOT/.claude/memory/approvals"
+mkdir -p "PROJECT_ROOT/.claude/specs"
+mkdir -p "PROJECT_ROOT/.claude/proposals"
+mkdir -p "PROJECT_ROOT/.claude/agents"
+mkdir -p "PROJECT_ROOT/.claude/skills"
+mkdir -p "PROJECT_ROOT/.claude/commands"
 ```
 
 This ensures that even a project that only has agents/ and skills/ but is missing
@@ -130,22 +119,16 @@ memory/ or specs/ will never crash when the pipeline tries to write to those fol
 ### Step 1 — Check if project layer exists
 
 ```bash
-ls "PROJECT_ROOT/LAYER_DIR/CLAUDE.md" 2>/dev/null && echo "EXISTS" || echo "MISSING"
+ls "PROJECT_ROOT/.claude/CLAUDE.md" 2>/dev/null && echo "EXISTS" || echo "MISSING"
 ```
-(if LAYER_DIR is `.cursor`, check `PROJECT_ROOT/.cursor/rules/00-platform.mdc`
-instead — the Cursor equivalent of CLAUDE.md, per `cursor_write_rule`'s convention)
 
 **If MISSING → go to Step 2 (setup). If EXISTS → skip to Step 3.**
 
 **If EXISTS — one-time staleness check (informational, never auto-fixes):**
 ```bash
-REF_BOOTSTRAP="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/platform/agents/bootstrap-agent.md"; [ -f "$REF_BOOTSTRAP" ] || REF_BOOTSTRAP="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/agents/bootstrap-agent.md"; [ -f "$REF_BOOTSTRAP" ] || REF_BOOTSTRAP="$HOME/.claude/agents/bootstrap-agent.md"; [ -f "PROJECT_ROOT/LAYER_DIR/agents/bootstrap-agent.md" ] && [ -f "$REF_BOOTSTRAP" ] && cmp -s "PROJECT_ROOT/LAYER_DIR/agents/bootstrap-agent.md" "$REF_BOOTSTRAP" && echo "IN_SYNC" || echo "CHECK_SYNC"
+REF_BOOTSTRAP="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/platform/agents/bootstrap-agent.md"; [ -f "$REF_BOOTSTRAP" ] || REF_BOOTSTRAP="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/agents/bootstrap-agent.md"; [ -f "$REF_BOOTSTRAP" ] || REF_BOOTSTRAP="$HOME/.claude/agents/bootstrap-agent.md"; [ -f "PROJECT_ROOT/.claude/agents/bootstrap-agent.md" ] && [ -f "$REF_BOOTSTRAP" ] && cmp -s "PROJECT_ROOT/.claude/agents/bootstrap-agent.md" "$REF_BOOTSTRAP" && echo "IN_SYNC" || echo "CHECK_SYNC"
 ```
-This is a cheap single-file proxy check, not a full audit — and only
-meaningful when LAYER_DIR is `.claude` (comparing against the `$HOME/.claude/`
-platform install); skip this specific check entirely when LAYER_DIR is
-`.cursor` since there's no established platform-home comparison path for
-Cursor agents yet. If `CHECK_SYNC` →
+This is a cheap single-file proxy check, not a full audit. If `CHECK_SYNC` →
 print once: `[orchestrator] ⚠ This project's capability files may be behind
 the current platform. Run: bash install.sh --doctor PROJECT_ROOT (full report)
 or bash install.sh --sync-project PROJECT_ROOT (update) — outside this session,
@@ -155,14 +138,14 @@ the pipeline regardless of the result — this never blocks.
 
 ---
 
-### Step 2 — Project setup (only when LAYER_DIR's CLAUDE.md/rules file is missing)
+### Step 2 — Project setup (only when the project's CLAUDE.md is missing)
 
 **Do this yourself — do NOT spawn a sub-agent for setup.**
 
 **2a-0. Read context bundle first.**
 
 ```bash
-cat "PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md" 2>/dev/null || echo "EMPTY"
+cat "PROJECT_ROOT/.claude/memory/context_bundle.md" 2>/dev/null || echo "EMPTY"
 ```
 
 If answers to project basics, stack, and gates are already present → skip straight
@@ -221,12 +204,11 @@ gate (gate 4 in run-gates.sh) — that gate applies to any frontend
 stack regardless of this answer (it is only skipped when the developer declined the QA tooling).
 
 After all 3 replies received, **write in parallel** (fire all simultaneously):
-- `PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md` — all answers
-- `PROJECT_ROOT/LAYER_DIR/memory/orchestrator_state.md` — initial state
+- `PROJECT_ROOT/.claude/memory/context_bundle.md` — all answers
+- `PROJECT_ROOT/.claude/memory/orchestrator_state.md` — initial state
 - Compose `security:` gate from selected scans (security-scans skill)
-- Write permission level into `LAYER_DIR/settings.json` (project-permissions
-  skill) — if LAYER_DIR is `.cursor`, this is `mcp.json` instead per
-  `cursor_write_mcp`'s convention, not a settings.json equivalent
+- Write permission level into `.claude/settings.json` (project-permissions
+  skill)
 - Record any "skip" answers under `## Deferred decisions` in knowledge.md
 
 Parse stack answer into STACK_NAMES. PRIMARY_STACK = first slug.
@@ -308,8 +290,6 @@ Stop here.
 
 **2c. Copy ALL stacks' files from PLATFORM_HOME into project layer:**
 
-**If LAYER_DIR is `.claude`** (unchanged from before):
-
 Stack source structure (in PLATFORM_HOME):
   `PLATFORM_HOME/stacks/STACK_NAME/agents/<agent-name>/AGENT.md`
   `PLATFORM_HOME/stacks/STACK_NAME/skills/<skill-name>/SKILL.md`
@@ -374,24 +354,10 @@ for src in PLATFORM_HOME/commands/*.md; do [ -f "$src" ] && cp "$src" "PROJECT_R
 for src in PLATFORM_HOME/skills/*.md;   do [ -f "$src" ] && cp "$src" "PROJECT_ROOT/.claude/skills/platform/$(basename "$src")"; done
 ```
 
-**If LAYER_DIR is `.cursor`:** do NOT hand-roll the copy loops above — they
-only produce `.claude/`-shaped output. Instead call the same host-aware
-script `/start` uses for this exact job:
+Verify result:
 ```bash
-bash "PLATFORM_HOME/scripts/setup-stacks.sh" "PLATFORM_HOME" "PROJECT_ROOT" STACK_NAME1 STACK_NAME2 ... --target cursor
-```
-This sources `platform/converters/cursor.sh` internally and writes the real
-Cursor-native shape (flat agent files, `skills/<name>/SKILL.md`, `rules/*.mdc`)
-instead of a `.claude/`-shaped tree with the folder renamed. If it exits with
-`TARGET_UNSUPPORTED:` (the converter isn't present at
-`PLATFORM_HOME/converters/cursor.sh`), print that message and fall back to
-`LAYER_DIR=.claude` for the rest of this setup, same handling as `/start`'s
-equivalent fallback.
-
-Verify result (path depends on LAYER_DIR):
-```bash
-find "PROJECT_ROOT/LAYER_DIR/agents" -name "AGENT.md" -o -name "*.md" | head -20
-find "PROJECT_ROOT/LAYER_DIR/skills" -name "SKILL.md" -o -name "*.md" | head -20
+find "PROJECT_ROOT/.claude/agents" -name "AGENT.md" -o -name "*.md" | head -20
+find "PROJECT_ROOT/.claude/skills" -name "SKILL.md" -o -name "*.md" | head -20
 ```
 
 ---
@@ -415,15 +381,10 @@ If stack agent files have different names, read them from PLATFORM_HOME and use 
 
 ---
 
-**2e. Write `PROJECT_ROOT/LAYER_DIR/CLAUDE.md`** using the Write tool (if
-LAYER_DIR is `.cursor`, write `PROJECT_ROOT/.cursor/rules/00-platform.mdc`
-instead — same filled content, wrapped with `---\ndescription: 00-platform
-(converted from sdlc-atlas platform source)\nalwaysApply: true\n---`
-frontmatter per `cursor_write_rule`'s convention).
+**2e. Write `PROJECT_ROOT/.claude/CLAUDE.md`** using the Write tool 
 
 Read `PLATFORM_HOME/platform/templates/CLAUDE.md` as the master template.
-Fill it per the table below (same fill logic regardless of LAYER_DIR — only
-the destination file/wrapper differs). Strip all HTML comment blocks. Apply
+Fill it per the table below. Strip all HTML comment blocks. Apply
 profile-conditional rules: no marker = all profiles; `[standard][enterprise]`
 = standard/enterprise only; `[enterprise]` = enterprise only.
 
@@ -473,9 +434,8 @@ This is a greenfield project — many project-specific sections will be empty or
 
 Section 14 Built features: write `> **→** knowledge.md § Built features` — greenfield has nothing built yet.
 
-**2e.2 Write `PROJECT_ROOT/LAYER_DIR/knowledge.md`** using the Write tool
-(same filename regardless of LAYER_DIR — knowledge.md is project-owned
-state, read by agents directly, not a Cursor rule).
+**2e.2 Write `PROJECT_ROOT/.claude/knowledge.md`** using the Write tool
+
 
 Read `PLATFORM_HOME/platform/templates/knowledge.md` as the template.
 For greenfield setup, fill smallly:
@@ -495,7 +455,7 @@ For greenfield setup, fill smallly:
 
 ---
 
-**2f. Write `PROJECT_ROOT/LAYER_DIR/memory/orchestrator_state.md`:**
+**2f. Write `PROJECT_ROOT/.claude/memory/orchestrator_state.md`:**
 
 ```
 # Orchestrator State
@@ -516,11 +476,11 @@ next_action: Setup complete. Continuing with feature pipeline.
 
 **2g. Confirm to the developer:**
 ```
-✔ PROJECT_ROOT/LAYER_DIR/CLAUDE.md written (rules/00-platform.mdc if .cursor)
+✔ PROJECT_ROOT/.claude/CLAUDE.md written
 ✔ profile: <profile>
 ✔ stacks: <all stacks>
 ✔ agents/skills/commands copied from PLATFORM_HOME/stacks/
-✔ LAYER_DIR structure created
+✔ .claude structure created
 Setup complete — continuing with your feature request now.
 ```
 
@@ -528,8 +488,7 @@ Setup complete — continuing with your feature request now.
 
 ### Step 3 — Read configuration + preload config summary to context_bundle
 
-Read `PROJECT_ROOT/LAYER_DIR/CLAUDE.md` (or `rules/00-platform.mdc` if
-LAYER_DIR is `.cursor`) — this is the source of truth for this project:
+Read `PROJECT_ROOT/.claude/CLAUDE.md` — this is the source of truth for this project:
 - `profile:` — which phases run
 - `stacks:` (or `stack:`) — which agents handle which work
 - `test:` / `security:` / `lint:` — gate commands
@@ -537,11 +496,11 @@ LAYER_DIR is `.cursor`) — this is the source of truth for this project:
 - **`## Built features` table** — what has already been built; pass this to spec-agent
   so it knows what exists and avoids duplicating or conflicting with prior work
 
-Read `PROJECT_ROOT/LAYER_DIR/knowledge.md` if it exists — contains uninferable facts about this codebase.
+Read `PROJECT_ROOT/.claude/knowledge.md` if it exists — contains uninferable facts about this codebase.
 
 **Then preload a config summary into context_bundle.md** (for all downstream forked agents to read once, eliminating redundant CLAUDE.md/knowledge.md re-reads):
 
-After reading both files, append/update these fields in `PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md`:
+After reading both files, append/update these fields in `PROJECT_ROOT/.claude/memory/context_bundle.md`:
 - `gate_commands` — list of { test, security, lint } commands from CLAUDE.md §8
 - `routing_table` — condensed agent routing from CLAUDE.md §5.4 (just names + one-liner each)
 - `built_features` — list of { slug, one-liner } from CLAUDE.md §14 (NOT full detail)
@@ -557,7 +516,7 @@ This is a ONE-TIME cache per pipeline run — other agents read the bundle FIRST
 
 ### Step 4 — Check for in-flight pipeline
 
-Read `PROJECT_ROOT/LAYER_DIR/memory/orchestrator_state.md`.
+Read `PROJECT_ROOT/.claude/memory/orchestrator_state.md`.
 If `phase:` is not `none` or `setup-complete`:
 - Summarise where it stopped
 - Offer to resume — never silently restart
@@ -567,9 +526,9 @@ If `phase:` is not `none` or `setup-complete`:
 
 Check if the project is greenfield (determined by `mode` being `greenfield` or if the codebase does not have a dependency manifest or code files yet).
 If greenfield:
-- Check if `PROJECT_ROOT/LAYER_DIR/memory/forge_plan.md` exists:
+- Check if `PROJECT_ROOT/.claude/memory/forge_plan.md` exists:
   ```bash
-  ls "PROJECT_ROOT/LAYER_DIR/memory/forge_plan.md" 2>/dev/null && echo "PLAN_EXISTS" || echo "PLAN_MISSING"
+  ls "PROJECT_ROOT/.claude/memory/forge_plan.md" 2>/dev/null && echo "PLAN_EXISTS" || echo "PLAN_MISSING"
   ```
 - If PLAN_MISSING:
   - If `forge_mode` input is `true` (running inside forge-agent batch loop) → proceed silently.
@@ -702,9 +661,8 @@ Inputs:
 - feature: <feature description from user>
 - requirements: <requirements list from Phase 1, or empty string if Phase 1 was skipped>
 - project_root: PROJECT_ROOT
-- layer_dir: LAYER_DIR
 - spec_id: <to be resolved — see spec-paths skill; format feature_slug/change_slug>
-- spec_target: PROJECT_ROOT/LAYER_DIR/specs/<feature_slug>/<change_slug>.md
+- spec_target: PROJECT_ROOT/.claude/specs/<feature_slug>/<change_slug>.md
 - stack_conventions: <stack conventions section from CLAUDE.md>
 - built_features: <## Built features table from CLAUDE.md>
 - mode: greenfield or brownfield  (brownfield if PROJECT_ROOT has existing source files)
@@ -780,7 +738,7 @@ It does NOT write any code. It does NOT "get a go-ahead" and continue in the sam
 The ACTIVE marker is written ONLY by the `/approve-spec` command — never by the orchestrator.
 
 **When the developer runs `/approve-spec` in a new turn:**
-The `/approve-spec` command writes `PROJECT_ROOT/LAYER_DIR/memory/approvals/ACTIVE`
+The `/approve-spec` command writes `PROJECT_ROOT/.claude/memory/approvals/ACTIVE`
 with content `<feature_slug>/<change_slug> approved <timestamp>`, then re-invokes the orchestrator at Phase 4.
 
 ---
@@ -790,7 +748,7 @@ with content `<feature_slug>/<change_slug> approved <timestamp>`, then re-invoke
 **First — verify approval before touching any file:**
 
 ```bash
-cat "PROJECT_ROOT/LAYER_DIR/memory/approvals/ACTIVE" 2>/dev/null || echo "NO_APPROVAL"
+cat "PROJECT_ROOT/.claude/memory/approvals/ACTIVE" 2>/dev/null || echo "NO_APPROVAL"
 ```
 
 If output is `NO_APPROVAL` → stop immediately:
@@ -821,7 +779,6 @@ Inputs:
 - task: <task description from spec ## Tasks section>
 - spec_section: <relevant spec section>
 - project_root: PROJECT_ROOT
-- layer_dir: LAYER_DIR
 - skill: <[skill: skill-name] annotation from the task>
 - ux_contract: <ONLY when this task touches a UI screen — see below>
 
@@ -832,7 +789,7 @@ Task: Implement this task according to the spec. Return a summary of files chang
 that creates/edits a screen, component, route, or styling file):** copy the
 spec task's `[template: landing|login|dashboard]` citation into `ux_contract`
 verbatim, plus this literal instruction appended: *"Before writing this
-screen, read `PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md § 3` yourself to
+screen, read `PROJECT_ROOT/.claude/memory/ux_brief.md § 3` yourself to
 confirm the Template assignment and pull resolved tokens/copy — do not
 scaffold from this task description's citation alone; the citation tells you
 WHICH section applies, it is not a substitute for reading it."* A spec task
@@ -897,9 +854,9 @@ Execute all verification gates in order:
 
    **Pre-QA server startup:**
    ```bash
-   # Detect stack from CLAUDE.md (or rules/00-platform.mdc if LAYER_DIR is .cursor)
-   BACKEND_STACK=$(grep '^backend:' PROJECT_ROOT/LAYER_DIR/CLAUDE.md | awk '{print $2}')
-   FRONTEND_STACK=$(grep '^frontend:' PROJECT_ROOT/LAYER_DIR/CLAUDE.md | awk '{print $2}')
+   # Detect stack from CLAUDE.md
+   BACKEND_STACK=$(grep '^backend:' PROJECT_ROOT/.claude/CLAUDE.md | awk '{print $2}')
+   FRONTEND_STACK=$(grep '^frontend:' PROJECT_ROOT/.claude/CLAUDE.md | awk '{print $2}')
 
    # Start backend (if FastAPI/Flask/Django detected)
    case "$BACKEND_STACK" in
@@ -971,11 +928,9 @@ Execute all verification gates in order:
     definition actually exists in this project's layer before dispatching it:
 
     ```bash
-    ls "PROJECT_ROOT/LAYER_DIR/agents/qa-agent.md" 2>/dev/null && echo "EXISTS" || echo "MISSING"
+    ls "PROJECT_ROOT/.claude/agents/qa-agent.md" 2>/dev/null && echo "EXISTS" || echo "MISSING"
     ```
 
-    (if LAYER_DIR is `.cursor`, check the cursor-native equivalent path instead —
-    a flat `qa-agent.md` under `PROJECT_ROOT/.cursor/agents/`)
     If `MISSING` → do NOT dispatch qa-agent. A project missing this file has no
     enforcement of the chrome-devtools(web)/maestro(mobile) split, and dispatch
     would silently fall back to whatever automation MCP happens to be connected
@@ -986,7 +941,7 @@ Execute all verification gates in order:
     - Print exactly:
 
       ```text
-      ⛔ qa-agent.md is missing from this project's LAYER_DIR/agents/ — cannot
+      ⛔ qa-agent.md is missing from this project's .claude/agents/ — cannot
       run the mandatory browser QA gate safely (no enforced web/mobile MCP split).
       Run: bash install.sh --sync-project PROJECT_ROOT   (outside this session)
       then re-run this gate. Filed a proposal; gate_results.md row 4 stays PENDING.
@@ -996,10 +951,7 @@ Execute all verification gates in order:
       the pipeline here exactly like any other gate failure — do not proceed to
       Gate 5 or report gates green.
 
-    If `EXISTS` → proceed. **Run qa-agent** (Task dispatch Inputs must include
-    `layer_dir: LAYER_DIR` alongside `project_root`/`platform_home` — qa-agent's
-    own Step -2 defaults to `.claude` if this is omitted, but pass it
-    explicitly to stay consistent with the rest of this pipeline run) to
+    If `EXISTS` → proceed. **Run qa-agent** (Task dispatch) to
     execute E2E UI verification (Phase 5a) on the running application:
     - **Web Projects**: Run live checks against the dev server using the `chrome-devtools` MCP server tools (offered for install by qa-agent Step -1 if missing). No Playwright.
     - **Mobile Projects**: Start the emulator/simulator and execute Maestro flows using the `maestro` MCP server tools (offered for install by qa-agent Step -1 if missing).
@@ -1010,13 +962,13 @@ Execute all verification gates in order:
       not as repeated orchestrator dispatches. A project with no prior
       `qa_report.md` (first-ever run) gets full coverage automatically —
       qa-agent forces `--full` itself, the orchestrator doesn't need to pass it.
-    - If a captcha, login block, or visual lock is hit during testing, suspend via `/automation-takeover` and prompt the user to use `/automation-resume`.
+    - If a captcha, login block, or visual lock is hit during testing, suspend via `/automation-takeover` and ask the developer to complete it by hand and `/automation-resume`, or skip live QA (recorded as `SKIPPED (declined)`, UI not verified). Never solve or bypass a CAPTCHA/MFA prompt automatically.
     - On success (a round-loop PASS), cache the verified journey using `/compile-ui-test` to optimize subsequent QA runs.
 
     **Record the verdict (MANDATORY):** after qa-agent returns, update
-    `PROJECT_ROOT/LAYER_DIR/memory/gate_results.md` row `| 4 | qa (browser) |` from
+    `PROJECT_ROOT/.claude/memory/gate_results.md` row `| 4 | qa (browser) |` from
     PENDING to PASS, **FAIL**, or `SKIPPED (declined)`, and require qa-agent to have
-    written `PROJECT_ROOT/LAYER_DIR/memory/qa_report.md` with a `verdict:` line. No
+    written `PROJECT_ROOT/.claude/memory/qa_report.md` with a `verdict:` line. No
     qa_report.md on disk = the gate did NOT run, whatever the agent's text says.
     - **FAIL** stops the pipeline exactly like a failing test gate: print findings,
       write state, end turn.
@@ -1066,9 +1018,8 @@ fi
 ```
 Agent: review-agent
 Inputs:
-- spec_path: PROJECT_ROOT/LAYER_DIR/specs/<feature_slug>/<change_slug>.md
+- spec_path: PROJECT_ROOT/.claude/specs/<feature_slug>/<change_slug>.md
 - project_root: PROJECT_ROOT
-- layer_dir: LAYER_DIR
 - diff: <output of the diff computation above>
 
 Task: Review the feature diff against the approved spec and project conventions.
@@ -1113,18 +1064,15 @@ Never overwrite with a blank or partial file. Merge = existing content + new add
 #### 6a — Update CLAUDE.md (state pointer only)
 
 ```bash
-cat "PROJECT_ROOT/LAYER_DIR/CLAUDE.md"
+cat "PROJECT_ROOT/.claude/CLAUDE.md"
 ```
-(if LAYER_DIR is `.cursor`, this is `rules/00-platform.mdc` instead — read/
-edit the same `state:` block within its `.mdc` wrapper, same as any other
-section)
 
 Read the full file. Then write it back using the Edit tool — change ONLY the `state:` block
 inside `## 13 · Orchestrator state pointer`:
 
 ```yaml
 state:
-  file: LAYER_DIR/memory/orchestrator_state.md
+  file: .claude/memory/orchestrator_state.md
   last_updated: <today YYYY-MM-DD>
   readiness: ready
   open_gaps: []
@@ -1138,7 +1086,7 @@ Do not touch any other section. Do not rewrite the whole file.
 #### 6b — Update knowledge.md (append built feature + merge registries)
 
 ```bash
-cat "PROJECT_ROOT/LAYER_DIR/knowledge.md"
+cat "PROJECT_ROOT/.claude/knowledge.md"
 ```
 
 Read the full file. Then write back using the Edit tool with ALL existing content preserved.
@@ -1202,7 +1150,7 @@ A missing or one-line entry will cause the next spec-agent to treat that domain 
 
 ## STATE — write after every step
 
-File: `PROJECT_ROOT/LAYER_DIR/memory/orchestrator_state.md`
+File: `PROJECT_ROOT/.claude/memory/orchestrator_state.md`
 
 **Write TWICE per phase — this is what makes a cut-off session resumable:**
 
@@ -1238,16 +1186,13 @@ next_action: <single concrete next step>
 ## HARD RULES
 
 - Run `pwd` → PROJECT_ROOT and `echo "$HOME/.claude"` → PLATFORM_HOME — both at Step 0
-- Establish LAYER_DIR at Step 0 too (from the `layer_dir` Task Input, default
-  `.claude`) — every path below written as `.claude/` means `LAYER_DIR/`
 - Always run `mkdir -p` skeleton at Step 0 — idempotent, never skipped
 - **Never search for the sdlc-atlas repo folder at runtime** — it is not needed
 - **Never hardcode any username, home directory, or machine path**
 - All stacks live at `PLATFORM_HOME/stacks/` — installed once by `install.sh --platform`
-- All output goes to `PROJECT_ROOT/LAYER_DIR/` — never to `PLATFORM_HOME`
+- All output goes to `PROJECT_ROOT/.claude/` — never to `PLATFORM_HOME`
 - Setup (Step 2) done by orchestrator directly — never spawn a sub-agent for setup
-- Stack agents copied from `PLATFORM_HOME/stacks/STACK_NAME/` to `PROJECT_ROOT/LAYER_DIR/agents/`
-  (via `setup-stacks.sh --target` when LAYER_DIR is `.cursor` — see Step 2c)
+- Stack agents copied from `PLATFORM_HOME/stacks/STACK_NAME/` to `PROJECT_ROOT/.claude/agents/`
 - Multi-stack: copy from ALL declared stacks
 - Missing stack in PLATFORM_HOME → auto-generate via stack-orchestrator (Path B) if installed; fall back to telling developer to run `install.sh --stack` only if stack-orchestrator is not present (Path C)
 - After every shipped feature → update `## Built features` table in knowledge.md + CLAUDE.md state pointer
@@ -1269,7 +1214,7 @@ next_action: <single concrete next step>
   (spec file, gate row, qa_report.md verdict) is the evidence — verify before advancing
 - No capability files created by agents — proposals only
 - No pushing, no raising PRs
-- **Cache-First rule (MANDATORY)**: Check `LAYER_DIR/memory/context_bundle.md` before reading raw configuration files (like `CLAUDE.md`/`rules/00-platform.mdc`, `knowledge.md`, etc.). Only read files from disk if the required data is missing.
+- **Cache-First rule (MANDATORY)**: Check `.claude/memory/context_bundle.md` before reading raw configuration files (like `CLAUDE.md`/`rules/00-platform.mdc`, `knowledge.md`, etc.). Only read files from disk if the required data is missing.
 - **Mandatory Parallel Writing of Independent Files**: When writing or updating multiple independent files, execute the Write/Edit tool calls in parallel. Sequential writing of independent files is strictly prohibited.
 - **Background Process Notifications (MANDATORY)**: Immediately print a clear, user-facing status message whenever a task, server (uvicorn, npm run dev), test runner, or async process is started in the background. Keep the user updated on the status of background tasks.
-- **Frontend UI/UX Alignment (MANDATORY)**: Ensure that all developer and UI agents read design tokens and layout navigation from `LAYER_DIR/memory/ux_brief.md` before writing or modifying any frontend code. Never allow agents to invent custom colors, layouts, or dimensions/breakpoints. This is not just a standing expectation of stack agents — Phase 4's dispatch template MUST carry the `ux_contract` field (see the UI-touching task rule above) on every UI task; a dispatch without it is this rule being violated at the orchestrator level, not just a stack-agent lapse.
+- **Frontend UI/UX Alignment (MANDATORY)**: Ensure that all developer and UI agents read design tokens and layout navigation from `.claude/memory/ux_brief.md` before writing or modifying any frontend code. Never allow agents to invent custom colors, layouts, or dimensions/breakpoints. This is not just a standing expectation of stack agents — Phase 4's dispatch template MUST carry the `ux_contract` field (see the UI-touching task rule above) on every UI task; a dispatch without it is this rule being violated at the orchestrator level, not just a stack-agent lapse.

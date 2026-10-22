@@ -12,7 +12,7 @@ sdlc-atlas is organized as four layers of customization and governance, each wit
 
 **Location:** `platform/` in this repository
 
-**Installs to:** `~/.claude/` (or `~/.cursor/` if targeting Cursor)
+**Installs to:** `~/.claude/`
 
 **Owned by:** sdlc-atlas maintainers
 

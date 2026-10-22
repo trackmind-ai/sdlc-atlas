@@ -4,21 +4,17 @@
 # setup-stacks.sh — fetch missing stacks and copy agents/skills/commands to a project.
 #
 # Usage:
-#   bash setup-stacks.sh <PLATFORM_HOME> <PROJECT_ROOT> <STACK_SLUG> [<STACK_SLUG2> ...] [--target claude|cursor]
+#   bash setup-stacks.sh <PLATFORM_HOME> <PROJECT_ROOT> <STACK_SLUG> [<STACK_SLUG2> ...]
 #
 # Example:
 #   bash setup-stacks.sh "$HOME/.claude" "/home/user/my-project" go react
-#   bash setup-stacks.sh "$HOME/.claude" "/home/user/my-project" go react --target cursor
 #
 # What it does:
 #   1. Copies platform core agents (spec-agent, review-agent, etc.) to the
-#      project's layer directory (.claude/ default, .cursor/ if --target cursor)
+#      project's .claude/ directory
 #   2. For each stack slug:
 #      a. If PLATFORM_HOME/stacks/SLUG/STACK.md is missing, runs stack-orchestrator to fetch it
 #      b. Copies agents, skills, and commands from the stack into the project,
-#         in the Cursor-native shape (flat agents/*.md, skills/<name>/SKILL.md)
-#         when --target cursor is passed — see platform/converters/cursor.sh
-#         for the same conversion rules install.sh uses.
 #
 # Installed by: install.sh --platform  (lands at PLATFORM_HOME/scripts/setup-stacks.sh)
 # Called by:   ~/.claude/commands/start.md after Batch 3 reply
@@ -26,42 +22,27 @@ set -uo pipefail
 
 # ── args ─────────────────────────────────────────────────────────────────────
 if [ "$#" -lt 3 ]; then
-  echo "usage: setup-stacks.sh <PLATFORM_HOME> <PROJECT_ROOT> <STACK_SLUG> [...] [--target claude|cursor]"
+  echo "usage: setup-stacks.sh <PLATFORM_HOME> <PROJECT_ROOT> <STACK_SLUG> [...]"
   exit 1
 fi
 
 PLATFORM_HOME="$1"; shift
 PROJECT_ROOT="$1";  shift
 
-TARGET="claude"
 STACKS=()
 while [ "$#" -gt 0 ]; do
-  if [ "$1" = "--target" ] && [ -n "${2:-}" ]; then
-    TARGET="$2"; shift 2; continue
+  if [ "$1" = "--target" ]; then
+    [ "${2:-}" = "claude" ] || { echo "Unknown --target '${2:-}': only the Claude Code target is supported"; exit 1; }
+    shift 2; continue
   fi
   STACKS+=("$1"); shift
 done
-case "$TARGET" in
-  claude|cursor) ;;
-  *) echo "Unknown --target '$TARGET'. Supported: claude, cursor"; exit 1 ;;
-esac
 
 FETCHER="$PLATFORM_HOME/stacks/stack-orchestrator/bin/stack_fetcher.py"
 LAYER_DIR=".claude"
-[ "$TARGET" = "cursor" ] && LAYER_DIR=".cursor"
 AGENTS_DST="$PROJECT_ROOT/$LAYER_DIR/agents"
 SKILLS_DST="$PROJECT_ROOT/$LAYER_DIR/skills"
 CMDS_DST="$PROJECT_ROOT/$LAYER_DIR/commands"
-
-if [ "$TARGET" = "cursor" ]; then
-  CURSOR_SH="$PLATFORM_HOME/converters/cursor.sh"
-  if [ ! -f "$CURSOR_SH" ]; then
-    echo "TARGET_UNSUPPORTED: --target cursor requires $CURSOR_SH — run 'bash install.sh --platform' from the sdlc-atlas repo checkout first to install the converter, then re-run /start."
-    exit 1
-  fi
-  # shellcheck source=/dev/null
-  source "$CURSOR_SH"
-fi
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 run_python() {
@@ -81,17 +62,12 @@ run_python() {
 # orchestrator, and others already shipped, which is how a project could end
 # up missing qa-agent.md entirely and its Phase 5a gate had no enforced
 # chrome-devtools(web)/maestro(mobile) split).
-echo "[setup-stacks] Copying platform agents (target: $TARGET)..."
+echo "[setup-stacks] Copying platform agents..."
 mkdir -p "$AGENTS_DST"
 for src in "$PLATFORM_HOME/agents"/*.md; do
   [ -f "$src" ] || continue
   agent="$(basename "$src")"
-  if [ "$TARGET" = "cursor" ]; then
-    base="${agent%.md}"
-    cursor_write_agent "$src" "$AGENTS_DST" "$base"
-  else
-    cp "$src" "$AGENTS_DST/$agent"
-  fi
+  cp "$src" "$AGENTS_DST/$agent"
   echo "  agent-copied: $agent"
 done
 
@@ -123,74 +99,35 @@ for SLUG in "${STACKS[@]}"; do
   fi
 
   # 2b. copy agents
-  if [ "$TARGET" = "cursor" ]; then
-    for entry in "$STACK_DIR/agents"/*/; do
-      [ -d "$entry" ] || continue
-      agent_name="$(basename "$entry")"
-      [ -f "$entry/AGENT.md" ] || continue
-      cursor_write_agent "$entry/AGENT.md" "$AGENTS_DST" "${SLUG}-${agent_name}"
-      echo "  agent-copied: $SLUG/$agent_name"
-    done
-  else
-    mkdir -p "$AGENTS_DST/$SLUG"
-    for entry in "$STACK_DIR/agents"/*/; do
-      [ -d "$entry" ] || continue
-      agent_name="$(basename "$entry")"
-      [ -f "$entry/AGENT.md" ] || continue
-      mkdir -p "$AGENTS_DST/$SLUG/$agent_name"
-      cp "$entry/AGENT.md" "$AGENTS_DST/$SLUG/$agent_name/AGENT.md"
-      echo "  agent-copied: $SLUG/$agent_name"
-    done
-  fi
+  mkdir -p "$AGENTS_DST/$SLUG"
+  for entry in "$STACK_DIR/agents"/*/; do
+    [ -d "$entry" ] || continue
+    agent_name="$(basename "$entry")"
+    [ -f "$entry/AGENT.md" ] || continue
+    mkdir -p "$AGENTS_DST/$SLUG/$agent_name"
+    cp "$entry/AGENT.md" "$AGENTS_DST/$SLUG/$agent_name/AGENT.md"
+    echo "  agent-copied: $SLUG/$agent_name"
+  done
 
   # 2c. copy skills
-  if [ "$TARGET" = "cursor" ]; then
-    STACK_GLOB="$(cursor_stack_glob "$SLUG")"
-    for entry in "$STACK_DIR/skills"/*/; do
-      [ -d "$entry" ] || continue
-      skill_name="$(basename "$entry")"
-      [ -f "$entry/SKILL.md" ] || continue
-      cursor_write_skill "$entry/SKILL.md" "$SKILLS_DST" "${SLUG}-${skill_name}" "$STACK_GLOB"
-      echo "  skill-copied: $SLUG/$skill_name"
-    done
-  else
-    mkdir -p "$SKILLS_DST/$SLUG"
-    for entry in "$STACK_DIR/skills"/*/; do
-      [ -d "$entry" ] || continue
-      skill_name="$(basename "$entry")"
-      [ -f "$entry/SKILL.md" ] || continue
-      mkdir -p "$SKILLS_DST/$SLUG/$skill_name"
-      cp "$entry/SKILL.md" "$SKILLS_DST/$SLUG/$skill_name/SKILL.md"
-      echo "  skill-copied: $SLUG/$skill_name"
-    done
-  fi
+  mkdir -p "$SKILLS_DST/$SLUG"
+  for entry in "$STACK_DIR/skills"/*/; do
+    [ -d "$entry" ] || continue
+    skill_name="$(basename "$entry")"
+    [ -f "$entry/SKILL.md" ] || continue
+    mkdir -p "$SKILLS_DST/$SLUG/$skill_name"
+    cp "$entry/SKILL.md" "$SKILLS_DST/$SLUG/$skill_name/SKILL.md"
+    echo "  skill-copied: $SLUG/$skill_name"
+  done
 
   # 2d. copy commands
-  # TARGET=cursor: per Cursor's documented migration guidance (commands are
-  # legacy, converted to Skills with disable-model-invocation: true), write
-  # each command as a skill under SKILLS_DST, not into a commands/ directory.
   if [ -d "$STACK_DIR/commands" ]; then
-    if [ "$TARGET" = "cursor" ]; then
-      for f in "$STACK_DIR/commands"/*.md; do
-        [ -f "$f" ] || continue
-        cmd_name="${SLUG}-$(basename "$f" .md)"
-        cursor_write_command_as_skill "$f" "$SKILLS_DST" "$cmd_name"
-        echo "  command-copied: $(basename "$f") (as skill: $cmd_name)"
-      done
-    else
-      mkdir -p "$CMDS_DST"
-      for f in "$STACK_DIR/commands"/*.md; do
-        [ -f "$f" ] || continue
-        cp "$f" "$CMDS_DST/$(basename "$f")"
-        echo "  command-copied: $(basename "$f")"
-      done
-    fi
-  fi
-
-  # 2e. cursor rule (only if this stack ships a STACK.md and target is cursor)
-  if [ "$TARGET" = "cursor" ] && [ -f "$STACK_DIR/STACK.md" ]; then
-    cursor_write_rule "$STACK_DIR/STACK.md" "$PROJECT_ROOT/$LAYER_DIR/rules" "$SLUG" "false" "$(cursor_stack_glob "$SLUG")"
-    echo "  rule-copied: $SLUG.mdc"
+    mkdir -p "$CMDS_DST"
+    for f in "$STACK_DIR/commands"/*.md; do
+      [ -f "$f" ] || continue
+      cp "$f" "$CMDS_DST/$(basename "$f")"
+      echo "  command-copied: $(basename "$f")"
+    done
   fi
 
   echo "  stack-done: $SLUG"

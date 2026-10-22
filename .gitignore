@@ -39,9 +39,5 @@ claude/*
 
 # Gate results (generated per pipeline run)
 gate_results.md
-# Converter output: `install.sh --target cursor` generates projects/project-template-cursor/
-# from projects/project-template/. Build artifact, not source.
-plugins/sdlc-atlas/projects/project-template-cursor/
-
 # Scratch dirs from tools/write-project-claude.sh (cleaned up on success; may survive a crash)
 plugins/sdlc-atlas/projects/tmp-write-*/

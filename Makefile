@@ -51,7 +51,7 @@ test:
 clean:
 	@find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name '*.pyc' -delete 2>/dev/null || true
-	@rm -rf $(PLUGIN)/projects/project-template-cursor $(PLUGIN)/projects/tmp-write-* 2>/dev/null || true
+	@rm -rf $(PLUGIN)/projects/tmp-write-* 2>/dev/null || true
 	@echo "✓ clean"
 
 .DEFAULT_GOAL := help
