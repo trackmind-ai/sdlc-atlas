@@ -45,7 +45,7 @@ orchestrate: each specialist agent does its job, you sequence and connect them.
 - Print `▸ Phase X of 8 — <name>` at the start of every phase.
 - Print `→ <agent-name>` before every agent dispatch.
 - **STATE DISCIPLINE (MANDATORY — this is what makes a cut-off session resumable):**
-  Write `PROJECT_ROOT/LAYER_DIR/memory/orchestrator_state.md` TWICE per phase:
+  Write `PROJECT_ROOT/.claude/memory/orchestrator_state.md` TWICE per phase:
   1. IMMEDIATELY BEFORE dispatching any agent or starting phase work:
      `phase: forge-phaseN-in-progress` + `next_action: <exactly what is being dispatched, resumable from this line alone>`
   2. IMMEDIATELY AFTER the phase's artifact is verified on disk:
@@ -73,40 +73,29 @@ pwd && echo "---" && echo "$HOME/.claude"
   Task Input, if this dispatch provided one; prefer the explicit input.
 - PLATFORM_HOME = path after `---` in call 1 — or the `platform_home` Task
   Input, if provided.
-- LAYER_DIR = the `layer_dir` value from this dispatch's Task Inputs, if
-  provided; default to `.claude` if not provided. Every `.claude/` path
-  referenced anywhere below in this file means `PROJECT_ROOT/LAYER_DIR/...`.
-  Thread `layer_dir: LAYER_DIR` into every sub-agent Task dispatch this file
-  makes below (ux-research-agent, design-concept-agent, architecture-agent,
-  bootstrap-agent, and every per-feature stack-agent dispatch during Phase
-  7) — a sub-agent that doesn't receive it defaults to `.claude` itself, but
-  passing it explicitly keeps the whole pipeline consistent under one
-  established value instead of each agent re-deriving its own default.
 
 ```bash
 # call 2 — context bundle
-cat "PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md" 2>/dev/null || echo "EMPTY"
+cat "PROJECT_ROOT/.claude/memory/context_bundle.md" 2>/dev/null || echo "EMPTY"
 ```
 
 - context_bundle content = output of call 2 (run this AFTER PROJECT_ROOT/
-  LAYER_DIR are known from call 1 — it was previously mis-ordered as a
-  parallel call using `$(pwd)` directly, which bypassed the established
-  PROJECT_ROOT/LAYER_DIR entirely; call 2 now depends on call 1's result).
+  PLATFORM_HOME are known from call 1 — call 2 depends on call 1's result).
 
 Immediately after roots are known, run ALL phase resume-checks IN ONE PARALLEL
 batch (single message, six tool calls fired simultaneously — do not wait between them):
 
 ```bash
 # check 1 — Phase 1
-ls "PROJECT_ROOT/LAYER_DIR/memory/business_brief.md" 2>/dev/null && echo "P1:EXISTS" || echo "P1:MISSING"
+ls "PROJECT_ROOT/.claude/memory/business_brief.md" 2>/dev/null && echo "P1:EXISTS" || echo "P1:MISSING"
 ```
 ```bash
 # check 2 — Phase 2
-ls "PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md" 2>/dev/null && echo "P2:EXISTS" || echo "P2:MISSING"
+ls "PROJECT_ROOT/.claude/memory/ux_brief.md" 2>/dev/null && echo "P2:EXISTS" || echo "P2:MISSING"
 ```
 ```bash
 # check 3 — Phase 3
-ls "PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md" 2>/dev/null && grep -q "UX Design Spec Addendum" "PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md" && echo "P3:EXISTS" || echo "P3:MISSING"
+ls "PROJECT_ROOT/.claude/memory/ux_brief.md" 2>/dev/null && grep -q "UX Design Spec Addendum" "PROJECT_ROOT/.claude/memory/ux_brief.md" && echo "P3:EXISTS" || echo "P3:MISSING"
 ```
 ```bash
 # check 4 — Phase 4
@@ -118,19 +107,19 @@ ls "PROJECT_ROOT/package.json" "PROJECT_ROOT/pyproject.toml" "PROJECT_ROOT/requi
 ```
 ```bash
 # check 6 — Phase 6
-ls "PROJECT_ROOT/LAYER_DIR/memory/forge_plan.md" 2>/dev/null && echo "P6:EXISTS" || echo "P6:MISSING"
+ls "PROJECT_ROOT/.claude/memory/forge_plan.md" 2>/dev/null && echo "P6:EXISTS" || echo "P6:MISSING"
 ```
 ```bash
 # check 7 — Phase 7 ledger (per-feature build state from forge_plan.md checkboxes)
-grep -c '^\- \[ \]' "PROJECT_ROOT/LAYER_DIR/memory/forge_plan.md" 2>/dev/null | sed 's/^/P7_OPEN:/' || echo "P7_OPEN:NA"
+grep -c '^\- \[ \]' "PROJECT_ROOT/.claude/memory/forge_plan.md" 2>/dev/null | sed 's/^/P7_OPEN:/' || echo "P7_OPEN:NA"
 ```
 ```bash
 # check 8 — Gates evidence
-grep -Eo 'PENDING|\*\*FAIL\*\*' "PROJECT_ROOT/LAYER_DIR/memory/gate_results.md" 2>/dev/null | sort | uniq -c || echo "GATES:NO_EVIDENCE"
+grep -Eo 'PENDING|\*\*FAIL\*\*' "PROJECT_ROOT/.claude/memory/gate_results.md" 2>/dev/null | sort | uniq -c || echo "GATES:NO_EVIDENCE"
 ```
 ```bash
 # check 9 — QA evidence (frontend stacks)
-grep -Ei '^(verdict|## verdict)' "PROJECT_ROOT/LAYER_DIR/memory/qa_report.md" 2>/dev/null || echo "QA:NO_EVIDENCE"
+grep -Ei '^(verdict|## verdict)' "PROJECT_ROOT/.claude/memory/qa_report.md" 2>/dev/null || echo "QA:NO_EVIDENCE"
 ```
 
 Store results as PHASE_STATUS map: P1..P6 = EXISTS or MISSING; plus
@@ -169,10 +158,9 @@ Agent: product-strategy-agent
 Inputs:
   project_root: PROJECT_ROOT
   platform_home: PLATFORM_HOME
-  layer_dir: LAYER_DIR
 
 Task:
-  Read context_bundle.md from PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md.
+  Read context_bundle.md from PROJECT_ROOT/.claude/memory/context_bundle.md.
   Extract known fields (project name, description, type, stack, and — from
   Q9/Q7b — test strictness/coverage expectations, since a "strict" answer
   there signals the user cares about correctness/quality up front, which
@@ -185,7 +173,7 @@ Task:
   Derive domain probes and stack probes from those fields.
   Run all 6 interview categories one question at a time (one message per question).
   Run the synthesis and validation pass with the user.
-  Write business_brief.md to PROJECT_ROOT/LAYER_DIR/memory/business_brief.md.
+  Write business_brief.md to PROJECT_ROOT/.claude/memory/business_brief.md.
   Return: path to brief + number of questions asked.
 ```
 
@@ -216,10 +204,9 @@ Agent: ux-research-agent
 Inputs:
   project_root: PROJECT_ROOT
   platform_home: PLATFORM_HOME
-  layer_dir: LAYER_DIR
 
 Task:
-  Read business_brief.md and context_bundle.md from PROJECT_ROOT/LAYER_DIR/memory/.
+  Read business_brief.md and context_bundle.md from PROJECT_ROOT/.claude/memory/.
   Extract all known context — do not re-ask anything already present.
   BEFORE asking anything: print one short line surfacing what you already
   know from business_brief.md and context_bundle.md (domain, target users,
@@ -233,7 +220,7 @@ Task:
     Path A (no DS): ask about brand colour, font, colour mode, colours to avoid,
                     and accessibility. These 5 questions are the minimum — never skip them.
     Path B (has DS): collect the design system content and coverage gaps.
-  Write ux_brief.md to PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md.
+  Write ux_brief.md to PROJECT_ROOT/.claude/memory/ux_brief.md.
   Return: questions asked + path taken (A or B).
 ```
 
@@ -266,7 +253,6 @@ Agent: design-concept-agent
 Inputs:
   project_root: PROJECT_ROOT
   platform_home: PLATFORM_HOME
-  layer_dir: LAYER_DIR
 
 Task:
   Read business_brief.md, ux_brief.md, and ui-base-template.md § 0/1/2/3/5
@@ -282,7 +268,7 @@ Task:
   Derive navigation structure (routes).
   Identify custom components needed.
   Present one validation summary to the user — apply adjustments if requested.
-  Append design addendum to PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md.
+  Append design addendum to PROJECT_ROOT/.claude/memory/ux_brief.md.
   Return: screen count, flow count, custom component count.
 ```
 
@@ -310,10 +296,9 @@ Agent: architecture-agent
 Inputs:
   project_root:   PROJECT_ROOT
   platform_home:  PLATFORM_HOME
-  layer_dir:      LAYER_DIR
-  business_brief: PROJECT_ROOT/LAYER_DIR/memory/business_brief.md
-  ux_brief:       PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md
-  context_bundle: PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md
+  business_brief: PROJECT_ROOT/.claude/memory/business_brief.md
+  ux_brief:       PROJECT_ROOT/.claude/memory/ux_brief.md
+  context_bundle: PROJECT_ROOT/.claude/memory/context_bundle.md
 
 Task:
   Read business_brief.md FIRST — compliance requirements, integration constraints,
@@ -357,8 +342,7 @@ Agent: bootstrap-agent
 Inputs:
   project_root:  PROJECT_ROOT
   platform_home: PLATFORM_HOME
-  layer_dir:     LAYER_DIR
-  ux_brief:      PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md
+  ux_brief:      PROJECT_ROOT/.claude/memory/ux_brief.md
 
 Task:
   Read ux_brief.md and business_brief.md — install the component library,
@@ -370,7 +354,7 @@ Task:
   approval, and gates. Do not implement them here.
   Write ACTIVE approval marker before any code edits.
   SELF-VERIFY CONTRACT: before reporting done, run the project's exact gate
-  commands (test: / lint: from LAYER_DIR/CLAUDE.md) AND the build command
+  commands (test: / lint: from .claude/CLAUDE.md) AND the build command
   (e.g. npm run build). All must exit 0. If any fail, fix and re-run (max 3
   fix cycles), else return FAILED with the failing output — NEVER return
   success for a scaffold that fails its own pipeline.
@@ -401,7 +385,7 @@ Print: `▸ Phase 6 of 8 — Feature Decomposition`
 
 If PHASE_STATUS[P6] = EXISTS → read forge_plan.md and skip directly to Phase 7:
 ```bash
-cat "PROJECT_ROOT/LAYER_DIR/memory/forge_plan.md"
+cat "PROJECT_ROOT/.claude/memory/forge_plan.md"
 ```
 
 If PHASE_STATUS[P6] = MISSING → read all three inputs IN PARALLEL (one message, three
@@ -409,11 +393,11 @@ tool calls fired simultaneously — do not wait between them):
 
 ```bash
 # read 1
-cat "PROJECT_ROOT/LAYER_DIR/memory/business_brief.md" 2>/dev/null || echo "EMPTY"
+cat "PROJECT_ROOT/.claude/memory/business_brief.md" 2>/dev/null || echo "EMPTY"
 ```
 ```bash
 # read 2
-cat "PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md" 2>/dev/null || echo "EMPTY"
+cat "PROJECT_ROOT/.claude/memory/ux_brief.md" 2>/dev/null || echo "EMPTY"
 ```
 ```bash
 # read 3
@@ -460,7 +444,7 @@ Wait for reply:
 - `add "<feature>"` → add to appropriate batch, re-present
 - `remove <N>` → remove feature N, re-present
 
-Write confirmed plan to `PROJECT_ROOT/LAYER_DIR/memory/forge_plan.md`:
+Write confirmed plan to `PROJECT_ROOT/.claude/memory/forge_plan.md`:
 
 ```markdown
 # Forge Plan — <PROJECT_NAME>
@@ -493,7 +477,7 @@ total_batches: <M>
 Update orchestrator_state.md:
 ```
 phase: forge-phase6-decomposition-complete
-forge_plan: LAYER_DIR/memory/forge_plan.md
+forge_plan: .claude/memory/forge_plan.md
 next_action: Run /forge-build to start iterative feature build
 ```
 
@@ -534,7 +518,6 @@ Agent: orchestrator
 Inputs:
   project_root:  PROJECT_ROOT
   platform_home: PLATFORM_HOME
-  layer_dir:     LAYER_DIR
   feature:       <feature description from forge_plan.md including [screens: ...]>
   ux_slice:      <ux_slice details extracted for this feature from forge_plan.md>
   forge_mode:    true
@@ -594,16 +577,13 @@ anything missing gets RUN NOW, not skipped:
    the platform-home copy since install.sh --platform never writes a
    project-local one):
    ```bash
-   GATES_SCRIPT="LAYER_DIR/scripts/run-gates.sh"; [ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="$HOME/LAYER_DIR/scripts/run-gates.sh"; bash "$GATES_SCRIPT"
+   GATES_SCRIPT=".claude/scripts/run-gates.sh"; [ -f "$GATES_SCRIPT" ] || GATES_SCRIPT="$HOME/.claude/scripts/run-gates.sh"; bash "$GATES_SCRIPT"
    ```
-   (both the project-local and platform-home fallback paths use the same
-   LAYER_DIR — `$HOME/.cursor/scripts/...` if this project's LAYER_DIR is
-   `.cursor`, matching whichever platform install actually has the script)
    Any FAIL → stop, fix via the pipeline, re-run. Do not proceed on stale
    gate_results.md from an earlier run.
 3. **Browser QA (frontend stacks):** if the stack includes
    react/nextjs/angular/vue/svelte/react-native/flutter, gate_results.md row 4
-   must be PASS, or `SKIPPED (declined)` when the developer declined the QA tooling
+   must be PASS, or `SKIPPED (declined)` when the developer declined live QA or its tooling
    (then say in the summary that the UI was not verified). If PENDING or stale → print `→ qa-agent` and dispatch qa-agent
    NOW (full mode, against the running dev server; start it if needed). Write
    its verdict into gate_results.md row 4. FAIL verdict → the forge is NOT
@@ -672,7 +652,7 @@ next_action: run /raise-pr
     saying "done" is a claim; the file/gate row is the evidence.
 16. Browser QA (qa-agent) is a gate for frontend stacks — the forge is never
     complete with gate_results.md row 4 PENDING/FAIL/stale. Row 4 may be
-    `SKIPPED (declined)` only when the developer explicitly declined the QA tooling.
+    `SKIPPED (declined)` only when the developer explicitly declined live QA or its tooling.
 17. State is written BEFORE every dispatch (`-in-progress`) and AFTER every
     verified completion. A stale orchestrator_state.md is a Phase failure, not
     a cosmetic issue — it is the only thing a cut-off session can resume from.

@@ -85,35 +85,12 @@ echo "$HOME/.claude"
 - **PROJECT_ROOT** = first output (overridden by developer's Q1 answer)
 - **PLATFORM_HOME** = second output
 - **PROJECT_ROOT is never a layer dir.** If PROJECT_ROOT (here, or from the Q1/B0
-  answer later) ends in `/.claude` or `/.cursor` (either slash style, trailing
+  answer later) ends in `/.claude` (either slash style, trailing
   slash ignored), drop that last segment: the parent is the project. Once
   PROJECT_ROOT is final, run `cd "PROJECT_ROOT"` so the session cwd is the
   project root. Claude Code creates `memory: project` agent memory at
   `<cwd>/.claude/agent-memory/`, so a cwd inside `.claude/` leaves a stray
   `.claude/.claude/`.
-
-**Determine TARGET (no question asked — this is a fact about the running
-session, not something to ask the developer or infer from disk):**
-- `TARGET` = `cursor` if this `/start` invocation is executing inside a
-  Cursor agent session, else `TARGET` = `claude` (the default — this covers
-  Claude Code CLI and is the only behavior that existed before this check).
-- `LAYER_DIR` = `.cursor` if `TARGET=cursor`, else `.claude`.
-- These are session-local values, not persisted to any project file. Every
-  `PROJECT_ROOT/.claude/...` path referenced anywhere below in this command
-  means `PROJECT_ROOT/$LAYER_DIR/...` — read `.claude/` in this document as
-  shorthand for "the LAYER_DIR established here," not a literal-always path.
-- **Known scope limit**: this affects `/start`'s OWN scaffolding only. Other
-  platform agents dispatched later in the pipeline (ux-research-agent,
-  design-concept-agent, bootstrap-agent, forge-agent, qa-agent) currently
-  hardcode `PROJECT_ROOT/.claude/memory/...` literally. If `TARGET=cursor`,
-  pass `layer_dir: LAYER_DIR` explicitly in every Task dispatch to those
-  agents' Inputs (see A-Forge below) so they can be told which memory path
-  to use — until those agent files are themselves updated to read
-  `layer_dir` from their inputs, treat this as a known limitation, not a
-  silent success; note it to the developer once if `TARGET=cursor`:
-  `[start] Note: Cursor-targeted memory-path support is partial — some
-  downstream pipeline agents may still expect .claude/. If you hit a
-  "file not found" error referencing .claude/memory/, that's this gap.`
 
 ---
 
@@ -236,10 +213,8 @@ On reply:
 
 - Must be absolute path. Must NOT contain "sdlc-atlas" or "AgenticAI-SDLC" (the platform checkout, not a project). If invalid → re-ask Q1.
 - Set PROJECT_ROOT = validated path (apply the layer-dir rule from Step 0b, then `cd "PROJECT_ROOT"`).
-- Run all mkdir in parallel (fire simultaneously, do not wait). Structure
-  depends on `TARGET` from Step 0b:
+- Run all mkdir in parallel (fire simultaneously, do not wait):
 
-**If TARGET = claude** (default — unchanged from before):
 ```bash
 mkdir -p "PROJECT_ROOT/.claude/memory/approvals"
 mkdir -p "PROJECT_ROOT/.claude/specs"
@@ -247,21 +222,6 @@ mkdir -p "PROJECT_ROOT/.claude/proposals"
 mkdir -p "PROJECT_ROOT/.claude/agents"
 mkdir -p "PROJECT_ROOT/.claude/skills"
 mkdir -p "PROJECT_ROOT/.claude/commands"
-```
-
-**If TARGET = cursor** (mirrors `platform/converters/cursor.sh`'s layout —
-flat agents, `skills/<name>/SKILL.md`, `rules/*.mdc` instead of `CLAUDE.md`,
-`mcp.json` instead of `settings.json`; `memory/`, `specs/`, `proposals/` are
-project-owned state, not part of the tool-specific layer, so they keep the
-same names/shape either way):
-```bash
-mkdir -p "PROJECT_ROOT/.cursor/memory/approvals"
-mkdir -p "PROJECT_ROOT/.cursor/specs"
-mkdir -p "PROJECT_ROOT/.cursor/proposals"
-mkdir -p "PROJECT_ROOT/.cursor/agents"
-mkdir -p "PROJECT_ROOT/.cursor/skills"
-mkdir -p "PROJECT_ROOT/.cursor/commands"
-mkdir -p "PROJECT_ROOT/.cursor/rules"
 ```
 
 ---
@@ -293,7 +253,7 @@ Wait for reply, store as BRAIN_GOAL.
 ```
 
 Wait for reply, store as BRAIN_CONSTRAINTS.
-Immediately compile the brainstorming answers into a bulleted format and write to `PROJECT_ROOT/LAYER_DIR/memory/brainstorm_notes.md`.
+Immediately compile the brainstorming answers into a bulleted format and write to `PROJECT_ROOT/.claude/memory/brainstorm_notes.md`.
 
 ---
 
@@ -379,7 +339,7 @@ in `CLAUDE.md`, which `test-agent` enforces on every `/feature` build from now
 on, and it does NOT weaken the browser-QA gate (gate 4 in
 `run-gates.sh` applies to any frontend stack regardless of this
 answer — "Light" only relaxes the coverage number; the QA gate is only ever
-skipped when the developer declined the QA tooling).
+skipped when the developer declined live QA or its tooling).
 
 ---
 
@@ -422,20 +382,11 @@ Wait for reply, store as TECH_LEADS.
 
 ### After Q12 — Setup stacks & write config
 
-Run the setup script (substitute real values, always pass `--target`):
+Run the setup script (substitute real values):
 
 ```bash
-bash "PLATFORM_HOME/scripts/setup-stacks.sh" "PLATFORM_HOME" "PROJECT_ROOT" STACK_SLUG1 STACK_SLUG2 ... --target TARGET
+bash "PLATFORM_HOME/scripts/setup-stacks.sh" "PLATFORM_HOME" "PROJECT_ROOT" STACK_SLUG1 STACK_SLUG2 ...
 ```
-
-If `TARGET=cursor` and the script exits with `TARGET_UNSUPPORTED: ...`
-(the `platform/converters/cursor.sh` converter isn't present at
-`PLATFORM_HOME/converters/cursor.sh` — it only lands there via
-`install.sh --platform` run from the sdlc-atlas repo checkout), print
-that exact message to the developer, then STOP this branch and ask: `Would
-you like to proceed with TARGET=claude instead for this project? (yes /
-no)` — **yes** falls back to `TARGET=claude`/`LAYER_DIR=.claude` and
-continues; **no** ends the `/start` run here.
 
 Read every output line:
 
@@ -443,37 +394,12 @@ Read every output line:
 - `FETCH_FAILED: SLUG` → print warning, continue without that stack.
 - Wait until every slug shows `stack-done: SLUG`.
 
-Then **write all config files in parallel** (all Write tool calls simultaneously).
-Shape depends on `TARGET`:
+Then **write all config files in parallel** (all Write tool calls simultaneously):
 
-**If TARGET = claude** (unchanged from before):
 1. `PROJECT_ROOT/.claude/CLAUDE.md` — fill from all answers (resolve `{{DATABASE}}` to the selected `DATABASE_SLUG` e.g. `sqlite`, `postgres`, etc.; resolve `{{COVERAGE_THRESHOLD}}` to the value derived from Q9's TEST_STRICTNESS — 70/85/0, never a hardcoded 0 regardless of what the user actually chose)
 2. `PROJECT_ROOT/.claude/knowledge.md` — fill from all answers
 3. `PROJECT_ROOT/.claude/memory/orchestrator_state.md` — initial state
 4. `PROJECT_ROOT/.claude/memory/context_bundle.md` — all answers recorded here
-
-**If TARGET = cursor** (mirrors `cursor_write_rule`'s output shape — same
-content, `.mdc` frontmatter wrapper instead of a bare markdown file):
-1. `PROJECT_ROOT/.cursor/rules/00-platform.mdc` — same fill as CLAUDE.md
-   above, wrapped with `---\ndescription: 00-platform (converted from
-   sdlc-atlas platform source)\nalwaysApply: true\n---` frontmatter
-   per `cursor_write_rule`'s convention
-2. `PROJECT_ROOT/.cursor/knowledge.md` — fill from all answers (plain
-   markdown, not a rule — knowledge.md is project-owned state, read by
-   agents directly, not a Cursor auto-apply rule)
-3. `PROJECT_ROOT/.cursor/memory/orchestrator_state.md` — initial state
-4. `PROJECT_ROOT/.cursor/memory/context_bundle.md` — all answers recorded
-   here, plus record `target: cursor` explicitly in this file so any
-   later-dispatched agent reading context_bundle.md knows to use
-   `.cursor/` paths for its own reads/writes until those agents are
-   themselves updated to take `layer_dir` as an explicit input
-5. `PROJECT_ROOT/.cursor/mcp.json` — only if it doesn't already exist:
-   `{"mcpServers": {}}` (empty skeleton, per `cursor_write_mcp` — this repo
-   has no MCP servers declared per-stack yet; Step 0c's Chrome DevTools/
-   Maestro MCP install still goes through `claude mcp add` regardless of
-   TARGET, since that's a Claude Code CLI session-level concept, not a
-   per-project file, and this platform's automated QA-tool install has no
-   Cursor equivalent yet — see Step 0c's own host-assumption note)
 
 Print:
 
@@ -515,8 +441,7 @@ Agent: forge-agent
 Inputs:
   project_root: PROJECT_ROOT
   platform_home: PLATFORM_HOME
-  layer_dir: LAYER_DIR
-  context_bundle: PROJECT_ROOT/LAYER_DIR/memory/context_bundle.md
+  context_bundle: PROJECT_ROOT/.claude/memory/context_bundle.md
   planning_only: true
 
 Task:
@@ -569,12 +494,8 @@ Do not ask for confirmation between steps. Do not ask about stacks. Run everythi
 
 ### B1 — Create project layer skeleton _(replaces `install.sh --new-project`)_
 
-TARGET/LAYER_DIR were already established in Step 0b — this branch uses the
-same values, no re-check needed.
-
 Run this single command (idempotent — safe whether the layer dir exists or not):
 
-**If TARGET = claude:**
 ```bash
 mkdir -p "PROJECT_ROOT/.claude/memory/approvals" && \
 mkdir -p "PROJECT_ROOT/.claude/specs" && \
@@ -585,19 +506,7 @@ mkdir -p "PROJECT_ROOT/.claude/commands" && \
 echo "SKELETON_DONE"
 ```
 
-**If TARGET = cursor:**
-```bash
-mkdir -p "PROJECT_ROOT/.cursor/memory/approvals" && \
-mkdir -p "PROJECT_ROOT/.cursor/specs" && \
-mkdir -p "PROJECT_ROOT/.cursor/proposals" && \
-mkdir -p "PROJECT_ROOT/.cursor/agents" && \
-mkdir -p "PROJECT_ROOT/.cursor/skills" && \
-mkdir -p "PROJECT_ROOT/.cursor/commands" && \
-mkdir -p "PROJECT_ROOT/.cursor/rules" && \
-echo "SKELETON_DONE"
-```
-
-Print: `✔ Step 1/3 — LAYER_DIR skeleton ready`
+Print: `✔ Step 1/3 — .claude skeleton ready`
 
 ---
 
@@ -636,32 +545,21 @@ Print: `✔ Step 2/3 — Detected stacks: [DETECTED_STACKS]`
 ### B3 — Copy stack agents/skills/commands into project _(replaces `install.sh --stack <name> --project`)_
 
 Same underlying mechanism as Branch A's post-Q12 stack setup — call the
-same script, host-aware, instead of hand-rolling per-branch `cp` logic that
-would otherwise need its own separate Cursor-shape duplication:
+same script instead of hand-rolling per-branch `cp` logic:
 
 ```bash
-bash "PLATFORM_HOME/scripts/setup-stacks.sh" "PLATFORM_HOME" "PROJECT_ROOT" DETECTED_STACK1 DETECTED_STACK2 ... --target TARGET
+bash "PLATFORM_HOME/scripts/setup-stacks.sh" "PLATFORM_HOME" "PROJECT_ROOT" DETECTED_STACK1 DETECTED_STACK2 ...
 ```
 
 Read output the same way as Branch A: `NEEDS_FETCH:`/`FETCH_FAILED:`/
-`stack-done:` per slug, `TARGET_UNSUPPORTED:` handling identical to Branch A
-(offer fallback to `TARGET=claude`, or stop if declined).
+`stack-done:` per slug.
 
 After the script completes, copy remaining platform-level settings (the
 script already copies platform core agents in step 1; this only handles the
 one file it doesn't own):
 
-**If TARGET = claude:**
 ```bash
 ls "PROJECT_ROOT/.claude/settings.json" 2>/dev/null || cp "$HOME/.claude/settings.json" "PROJECT_ROOT/.claude/settings.json" 2>/dev/null && echo "settings.json installed"
-```
-
-**If TARGET = cursor:** no `settings.json` equivalent to copy — Cursor's
-`mcp.json` was already written (or left alone if present) in the "After
-Q12 — write config" step's cursor branch; brownfield doesn't re-run that
-step, so write it here if missing:
-```bash
-ls "PROJECT_ROOT/.cursor/mcp.json" 2>/dev/null || { mkdir -p "PROJECT_ROOT/.cursor"; printf '{\n  "mcpServers": {}\n}\n' > "PROJECT_ROOT/.cursor/mcp.json"; echo "mcp.json installed"; }
 ```
 
 Print: `✔ Step 3/3 — Stack files installed`
@@ -691,20 +589,16 @@ Mode: /audit-project (brownfield)
 Inputs:
   project_root: PROJECT_ROOT
   platform_home: PLATFORM_HOME
-  layer_dir: LAYER_DIR
   detected_stacks: DETECTED_STACKS
 
 Task:
   This is an EXISTING project with code already present.
-  LAYER_DIR skeleton and stack agents/skills/commands have already been copied
-  into PROJECT_ROOT/LAYER_DIR — do NOT re-copy or overwrite them.
+  The .claude skeleton and stack agents/skills/commands have already been copied
+  into PROJECT_ROOT/.claude — do NOT re-copy or overwrite them.
   Deep-read EVERY file in PROJECT_ROOT before writing anything.
   Understand what is already built, what stack is in use, what patterns exist.
-  If LAYER_DIR is .claude, write or regenerate PROJECT_ROOT/.claude/CLAUDE.md
-  and PROJECT_ROOT/.claude/knowledge.md. If LAYER_DIR is .cursor, write or
-  regenerate PROJECT_ROOT/.cursor/rules/00-platform.mdc (same content, .mdc
-  frontmatter wrapper per cursor_write_rule's convention) and
-  PROJECT_ROOT/.cursor/knowledge.md. Either way, write with full accuracy and
+  Write or regenerate PROJECT_ROOT/.claude/CLAUDE.md and
+  PROJECT_ROOT/.claude/knowledge.md with full accuracy and
   preserve any existing knowledge.md § Built features (append, do not wipe).
   Return a one-paragraph summary of what was found and what was written.
 ```
@@ -717,9 +611,9 @@ After setup-agent returns, print:
 
 ```
 ── Done ─────────────────────────────────
-✔ LAYER_DIR skeleton created
+✔ .claude skeleton created
 ✔ Stack(s) [DETECTED_STACKS] installed
-✔ CLAUDE.md/rules + knowledge.md written
+✔ CLAUDE.md + knowledge.md written
 ─────────────────────────────────────────
 ```
 
@@ -729,14 +623,10 @@ Then go to **B-ADO** before asking about features.
 
 ### B-ADO — Azure DevOps integration (optional, one-time)
 
-Check if ADO is already configured by reading the tracker section (CLAUDE.md
-if TARGET=claude, rules/00-platform.mdc if TARGET=cursor):
+Check if ADO is already configured by reading the tracker section of CLAUDE.md:
 
 ```bash
-# TARGET=claude
 grep "type:.*azure-devops" "PROJECT_ROOT/.claude/CLAUDE.md" 2>/dev/null && echo "CONFIGURED" || echo "NOT_CONFIGURED"
-# TARGET=cursor
-grep "type:.*azure-devops" "PROJECT_ROOT/.cursor/rules/00-platform.mdc" 2>/dev/null && echo "CONFIGURED" || echo "NOT_CONFIGURED"
 ```
 
 If `CONFIGURED` → check if PAT env var is set:
@@ -776,23 +666,10 @@ and stop.
 
 ## Branch C — Resume <!-- reply: c -->
 
-A resumed project already exists on disk with whichever layer directory its
-original `/start` run created — this is the one case where filesystem
-inference is correct (the resuming session's own host may differ from
-whichever tool originally scaffolded it, so "which tool is running now"
-isn't the right signal here; "which layer dir does this project already
-have" is):
+A resumed project already exists on disk; read its orchestrator state:
 
 ```bash
-ls -d "PROJECT_ROOT/.claude" 2>/dev/null && echo "LAYER:claude"
-ls -d "PROJECT_ROOT/.cursor" 2>/dev/null && echo "LAYER:cursor"
-```
-
-Set `LAYER_DIR` from whichever printed (prefer `.claude` if both somehow
-exist — treat that as a `.claude`-primary project). Then:
-
-```bash
-cat "PROJECT_ROOT/LAYER_DIR/memory/orchestrator_state.md" 2>/dev/null || echo "NOT_FOUND"
+cat "PROJECT_ROOT/.claude/memory/orchestrator_state.md" 2>/dev/null || echo "NOT_FOUND"
 ```
 
 If NOT_FOUND → ask for project path first, then re-read.

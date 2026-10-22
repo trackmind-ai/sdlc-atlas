@@ -58,7 +58,6 @@ Useful follow-ups:
 ```bash
 bash install.sh --doctor /path/to/my-repo        # what is stale or missing (changes nothing)
 bash install.sh --sync-project /path/to/my-repo  # pull current platform into that project
-bash install.sh --platform --target cursor       # same layers into ~/.cursor/ instead
 ```
 
 Windows: use Git Bash for these, or `.\setup.ps1 -Project C:\path\to\repo -Stack python`.

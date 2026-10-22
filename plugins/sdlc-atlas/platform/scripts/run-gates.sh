@@ -137,7 +137,7 @@ grep -Eiq '^(stacks?|frontend):.*\b(react|nextjs|next\.js|angular|vue|svelte|rea
 QA_REPORT=".claude/memory/qa_report.md"
 if [ "$FRONTEND" -eq 1 ]; then
   if [ -f "$QA_REPORT" ] && grep -Eiq '^verdict:[[:space:]]*SKIPPED' "$QA_REPORT" && grep -Eiq '^declined_by:[[:space:]]*developer' "$QA_REPORT"; then
-    # The developer explicitly declined the QA tooling. Honest label, not a pass.
+    # The developer explicitly declined live QA or its tooling. Honest label, not a pass.
     echo "| 4 | qa (browser) | qa tooling declined by developer — UI NOT verified | SKIPPED (declined) |" >> "$OUT"
     echo "GATE 4 qa: SKIPPED (declined) — the developer chose to continue without live QA; the UI was NOT verified."
   elif [ -f "$QA_REPORT" ] && grep -Eiq '^(verdict|## verdict).*(PASS)' "$QA_REPORT"; then

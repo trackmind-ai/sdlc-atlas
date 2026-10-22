@@ -12,6 +12,11 @@ may contain breaking changes; they will always be called out under **Changed**.
 - External tools and plugins are now optional everywhere. `/start`, `/setup`, the orchestrator, setup-agent, qa-agent, test-agent, sonar-agent and security-agent ask before installing caveman, Chrome DevTools MCP, Maestro MCP or a missing test/lint/security tool. If the developer says no, nothing is installed and the run continues. Previously `/start` and `/setup` stopped without caveman, `/start` stopped when QA tooling was declined or failed to install, and qa-agent stopped on a failed MCP check.
 - A declined tool or declined QA tooling is recorded as `SKIPPED (declined)` in `gate_results.md` (QA via `qa_report.md` with `verdict: SKIPPED` and `declined_by: developer`; other tools via `.claude/memory/declined_tools.md`). `run-gates.sh` treats it as resolved, and the completion summary must say the check did not run. It is never recorded as a pass, and a static review is never presented as QA.
 - Narrowed the project allow list: `npx` is limited to named tools instead of `npx *`, `claude mcp add` to the two QA servers, `pip install` to requirements files and bandit. The `project-permissions` Standard profile matches.
+- A CAPTCHA, MFA or login wall during live QA no longer waits indefinitely: qa-agent asks the developer to complete it by hand and resume, or skip live QA (recorded as `SKIPPED (declined)`, UI not verified). The agent still never solves or bypasses the prompt itself.
+- Before live QA starts (orchestrator Gate 4 and `/quality-check`), the developer is asked whether to run it or skip it. Skipping is recorded as `SKIPPED (declined)` with the UI marked not verified.
+
+### Removed
+- The second-editor target: its converter script under `platform/converters/`, the non-Claude `--target` / `--platform` values in `install.sh` and `setup-stacks.sh`, its generated project template, and the TARGET/LAYER_DIR indirection in `/start` and the platform agents. Only the Claude Code target remains; `--target X` / `--platform X` for anything but `claude` now fails with a clear message. The stack fetcher no longer pulls from that editor's rule collections.
 
 ### Added
 - `tools/test-gates.sh`, a behaviour test for the declined-tool and declined-QA paths of `run-gates.sh`, run in CI.
@@ -77,7 +82,7 @@ Found while preparing the release, all pre-existing:
 - `verify-package.sh` reported ~30 phantom failures (a regex that truncated hyphenated agent
   names) that masked real ones, called all 14 `settings.json` files invalid on Windows, and
   referenced a hardcoded internal project path.
-- `cursor.sh` used `local … readonly`, shadowing the shell builtin.
+- The editor converter script used `local … readonly`, shadowing the shell builtin.
 - `setup-all.sh` never produced a project `CLAUDE.md`. The template ships without one (it is
   `/audit-project`'s job to generate the full version), and the stamping step was guarded by
   `[ -f ]`, so it silently did nothing and step 6 failed every run with "missing CLAUDE.md".

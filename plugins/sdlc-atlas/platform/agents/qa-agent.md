@@ -290,7 +290,12 @@ Load skill: `live-qa` — defines health-score rubric (Console 15% / Links 10% /
       4a or 4b):
         - Write `{"suspended": true, "reason": "CAPTCHA / MFA / Missing Selector"}` to `LAYER_DIR/memory/qa_state.json`.
         - Output an alert: `⚠ QA BLOCKED: Prompting human takeover. Run /automation-takeover to review, then /automation-resume to continue.`
-        - Halt execution and wait for the resume signal.
+        - Halt execution and ask the developer (AskUserQuestion): complete the
+          step by hand and resume, or skip live QA. Never try to solve or bypass
+          a CAPTCHA or MFA prompt yourself.
+          - **resume** → wait for `/automation-resume`, then continue.
+          - **skip** → write `qa_report.md` with `verdict: SKIPPED` and
+            `declined_by: developer`; the UI is reported as not verified.
       Classify findings per category (E2E Journey, Console, Links, Visual,
       Functional, UX, Perf, Content, A11y).
       **Template adherence check (MANDATORY, non-negotiable, every run)**:

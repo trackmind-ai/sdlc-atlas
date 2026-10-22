@@ -39,34 +39,18 @@ echo "$HOME/.claude"
 PROJECT_ROOT = first output (or the `project_root` Task Input, if this
 dispatch provided one — prefer the explicit input over re-deriving from `pwd`).
 PLATFORM_HOME = second output (or the `platform_home` Task Input, if provided).
-LAYER_DIR = the `layer_dir` value from this dispatch's Task Inputs, if
-provided; default to `.claude` if not provided. Every `PROJECT_ROOT/.claude/...`
-path below means `PROJECT_ROOT/LAYER_DIR/...` — read `.claude/` in this
-document as shorthand for "whichever LAYER_DIR was established here." The
-`~/.claude/...` platform-fallback paths below (home-directory, not
-project-relative) are unaffected by LAYER_DIR — those always mean the
-Claude Code platform install specifically, since Cursor's platform-fallback
-equivalent would be `~/.cursor/...`, a distinct location this agent does not
-currently branch to (see the Cursor-fallback note in step 2 below).
 
 ## Process
 
 1. **Determine stack.** Read `docs/architecture/system-architecture.md` if
-   present; else read `PROJECT_ROOT/LAYER_DIR/CLAUDE.md` for `stack:` (if
-   LAYER_DIR is `.cursor`, this is `rules/00-platform.mdc` instead —
-   `stack:` lives in the same YAML-ish block either way, just a different
-   filename/wrapper); else ask ONE question.
+   present; else read `PROJECT_ROOT/.claude/CLAUDE.md` for `stack:`; else ask ONE question.
 
 2. **Load the stack bootstrap skill.** Look for the skill in this order:
-   - `PROJECT_ROOT/LAYER_DIR/skills/<stack>-bootstrap.md` (project layer —
-     copied from stack during setup; under `.cursor/`, this is
-     `skills/<stack>-bootstrap/SKILL.md` per Cursor's per-skill-folder shape)
+   - `PROJECT_ROOT/.claude/skills/<stack>-bootstrap.md` (project layer —
+     copied from stack during setup)
    - `PLATFORM_HOME/stacks/<stack>/skills/<stack>-bootstrap.md` (stack layer
-     — unaffected by LAYER_DIR, this is always the platform source location)
-   - `${CLAUDE_PLUGIN_ROOT}/platform/skills/project-bootstrap/SKILL.md` or `~/.claude/skills/project-bootstrap.md` or `~/.claude/skills/project-bootstrap/SKILL.md` (platform generic fallback —
-     Claude Code specific; if LAYER_DIR is `.cursor` and this path doesn't
-     exist because the platform was installed with `--platform cursor`
-     instead, fall back to `~/.cursor/skills/project-bootstrap/SKILL.md`)
+     — the platform source location)
+   - `${CLAUDE_PLUGIN_ROOT}/platform/skills/project-bootstrap/SKILL.md` or `~/.claude/skills/project-bootstrap.md` or `~/.claude/skills/project-bootstrap/SKILL.md` (platform generic fallback)
 
    If none of the above exist (e.g. stack was just generated and skills weren't
    copied yet), use the `project-bootstrap` platform skill as the fallback and
@@ -82,11 +66,11 @@ currently branch to (see the Cursor-fallback note in step 2 below).
    - `.gitignore`, README stub, and an empty `knowledge.md` with heading
 
     3b. **Apply UI template(s)** (only when `ux_brief.md` exists in
-        `PROJECT_ROOT/LAYER_DIR/memory/`):
+        `PROJECT_ROOT/.claude/memory/`):
 
         ```bash
-        cat "PROJECT_ROOT/LAYER_DIR/memory/ux_brief.md"
-        cat "PROJECT_ROOT/LAYER_DIR/memory/business_brief.md"
+        cat "PROJECT_ROOT/.claude/memory/ux_brief.md"
+        cat "PROJECT_ROOT/.claude/memory/business_brief.md"
         ```
 
         Then:
@@ -223,10 +207,8 @@ currently branch to (see the Cursor-fallback note in step 2 below).
    done, run ALL of these from PROJECT_ROOT and require exit code 0 from each:
 
    1. Install: `npm ci`/`npm install` / `pip install -r ...` (stack-appropriate)
-   2. Test: the EXACT `test:` command from `PROJECT_ROOT/LAYER_DIR/CLAUDE.md`
-      (or `rules/00-platform.mdc` if LAYER_DIR is `.cursor`)
-   3. Lint: the EXACT `lint:` command from `PROJECT_ROOT/LAYER_DIR/CLAUDE.md`
-      (or `rules/00-platform.mdc` if LAYER_DIR is `.cursor`)
+   2. Test: the EXACT `test:` command from `PROJECT_ROOT/.claude/CLAUDE.md`
+   3. Lint: the EXACT `lint:` command from `PROJECT_ROOT/.claude/CLAUDE.md`
    4. Build: the project's build command (`npm run build`, `tsc`, etc.) —
       lint passing does NOT prove the project compiles; build is not optional.
    5. Audit: `npm audit` / `pip-audit` — record high/critical counts.
@@ -294,8 +276,8 @@ currently branch to (see the Cursor-fallback note in step 2 below).
 - All version choices cited to the stack skill's defaults or a developer answer.
 - CI file matches org branch rules (from project CLAUDE.md if declared).
 - Always write files to PROJECT_ROOT — establish it with `pwd` first (see Step 0).
-- **Cache-First rule (MANDATORY)**: Check `LAYER_DIR/memory/context_bundle.md` before reading raw configuration files (like `CLAUDE.md`/`rules/00-platform.mdc`, `knowledge.md`, etc.). Only read files from disk if the required data is missing.
+- **Cache-First rule (MANDATORY)**: Check `.claude/memory/context_bundle.md` before reading raw configuration files (like `CLAUDE.md`/`rules/00-platform.mdc`, `knowledge.md`, etc.). Only read files from disk if the required data is missing.
 - **Mandatory Parallel Writing of Independent Files**: When writing or updating multiple independent files, execute the Write/Edit tool calls in parallel. Sequential writing of independent files is strictly prohibited.
 - **Background Process Notifications (MANDATORY)**: Immediately print a clear, user-facing status message whenever a task, server, setup script, or installation is started in the background. Keep the user updated on status.
-- **Frontend UI/UX Alignment (MANDATORY)**: Read design tokens and layout navigation from `LAYER_DIR/memory/ux_brief.md` before writing or modifying any frontend code. Scaffold the project to match the styling specifications (primary colors, font settings, layout density, and nav layout style) exactly — AND the exact §0 Layout dimensions/breakpoints (nav height, sidebar width, content max-width, padding, sm/md/lg/xl/2xl breakpoints, 44×44px touch-target floor), with equal weight to colour/font. Dimensions are not optional detail — a scaffold with the right colours but wrong breakpoints has still failed this rule.
+- **Frontend UI/UX Alignment (MANDATORY)**: Read design tokens and layout navigation from `.claude/memory/ux_brief.md` before writing or modifying any frontend code. Scaffold the project to match the styling specifications (primary colors, font settings, layout density, and nav layout style) exactly — AND the exact §0 Layout dimensions/breakpoints (nav height, sidebar width, content max-width, padding, sm/md/lg/xl/2xl breakpoints, 44×44px touch-target floor), with equal weight to colour/font. Dimensions are not optional detail — a scaffold with the right colours but wrong breakpoints has still failed this rule.
 - **Template contract is FINAL (MANDATORY)**: the per-screen template assignment (`landing`, `login`, or `dashboard`) written to `ux_brief.md` by design-concept-agent is not a suggestion — every screen is scaffolded structurally per its assigned template's mandatory sections (see `ui-base-template.md` §§ 1-3), in the order those sections specify, with real derived content (never lorem ipsum, never fabricated stats/testimonials), and with the § 4 Animation & Transition spec wired in. This applies to the initial bootstrap AND to every later `/feature` build that touches a UI screen — the template is followed till the end of the project, not just at scaffold time.

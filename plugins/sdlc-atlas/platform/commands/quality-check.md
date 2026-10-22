@@ -24,7 +24,10 @@ fail-stops with exit 2, results written to `PROJECT_ROOT/.claude/memory/gate_res
 
 ## Step 2b — Browser QA gate (frontend stacks)
 
-Read `gate_results.md`. If row `| 4 | qa (browser) |` is **PENDING** (or stale):
+Read `gate_results.md`. If row `| 4 | qa (browser) |` is **PENDING** (or stale),
+ask the developer once: `Run live QA now, or skip it?` On **skip**, write
+`.claude/memory/qa_report.md` with `verdict: SKIPPED`, `declined_by: developer` and
+`ui_verified: false`, and continue to Step 3 saying the UI was not verified. On **run**,
 dispatch `qa-agent` NOW (full mode) against the running dev server — start the
 server first if needed. When qa-agent returns, flip row 4 to PASS, **FAIL** or
 `SKIPPED (declined)` based on the `verdict:` line in `.claude/memory/qa_report.md`.

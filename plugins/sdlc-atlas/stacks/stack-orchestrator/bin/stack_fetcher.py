@@ -63,10 +63,6 @@ MAX_TOTAL_CHARS  = 40_000
 MAX_WORKERS      = 20
 
 GITHUB_REPOS = [
-    "spencerpauly/awesome-cursor-skills",
-    "PatrickJS/awesome-cursorrules",
-    "sanjeed5/awesome-cursor-rules-mdc",
-    "tugkanboz/awesome-cursorrules",
     "JhonMA82/awesome-clinerules",
 ]
 
@@ -294,8 +290,6 @@ def fetch_official_docs(stack: str) -> list[tuple[str, str]]:
 
 def fetch_directories(stack: str) -> list[tuple[str, str]]:
     candidates = [
-        f"https://cursor.directory/{stack}",
-        f"https://cursor.directory/rules/{stack}",
         f"https://agentdepot.dev/search?q={stack}",
     ]
 
@@ -332,7 +326,7 @@ def fetch_github(stack: str) -> list[tuple[str, str]]:
             (node["path"] for node in tree
              if node.get("type") == "blob"
              and needle in node.get("path", "").lower()
-             and node["path"].lower().endswith((".md", ".mdc", ".cursorrules", ".txt"))
+             and node["path"].lower().endswith((".md", ".txt"))
              and not junk_path(node["path"])),
             key=lambda p: generality_key(p, needle),
         )

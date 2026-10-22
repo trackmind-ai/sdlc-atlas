@@ -106,7 +106,6 @@ function Invoke-Clean {
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     Get-ChildItem -Path $Root -File -Recurse -Filter *.pyc -ErrorAction SilentlyContinue |
         Remove-Item -Force -ErrorAction SilentlyContinue
-    Remove-Item (Join-Path $Plugin 'projects/project-template-cursor') -Recurse -Force -ErrorAction SilentlyContinue
     Get-ChildItem -Path (Join-Path $Plugin 'projects') -Directory -Filter 'tmp-write-*' -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host 'clean'
